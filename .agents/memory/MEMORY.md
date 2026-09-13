@@ -1,0 +1,1 @@
+- [Replit config validation](replit-config-validation.md) — `.replit` changes require validated replacement instead of direct edits.
