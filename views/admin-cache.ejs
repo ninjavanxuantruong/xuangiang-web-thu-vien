@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bộ nhớ đệm tin tức — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .cache-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .cache-block .meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .cache-block .meta b { color: var(--text-primary); }
+    .cache-preview {
+      font-size: 12.5px;
+      line-height: 1.7;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--bg-page);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+    .cache-preview ol { margin: 0; padding-left: 18px; }
+    .danger {
+      background: var(--color-brand);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Bộ nhớ đệm (cache) tin tức</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/gop-y" class="account-btn">💬 Góp ý</a>
+  </header>
+
+  <div class="section">
+    <p style="font-size:13px;color:var(--text-muted);">
+      Mỗi khối dưới đây là 1 mảng tin tức được lấy 1 lần/ngày (Bài đọc đề xuất,
+      Điểm báo quốc tế...) rồi lưu lại để mọi người xem chung, đỡ tốn tải lại
+      liên tục. Xoá 1 khối hoặc xoá hết để hệ thống tự lấy dữ liệu mới ngay
+      lượt xem kế tiếp.
+    </p>
+
+    <form method="POST" action="/quanly/bo-nho-dem/xoa" class="toolbar-row"
+          onsubmit="return confirm('Xoá TOÀN BỘ bộ nhớ đệm tin tức? Hệ thống sẽ phải lấy lại từ đầu cho lượt xem kế tiếp. Không thể hoàn tác.');">
+      <button type="submit" class="danger">🗑 Xoá HẾT, làm lại từ đầu</button>
+    </form>
+
+    <% if (items.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có khối cache nào được lưu.</p>
+    <% } else { %>
+      <% items.forEach(function(block) { %>
+        <div class="cache-block">
+          <div class="meta">
+            Khối: <b><%= block.key %></b>
+            · Ngày cache: <b><%= block.dayKey || "(không rõ)" %></b>
+            · Cập nhật lúc: <b><%= block.updatedAt || "(không rõ)" %></b>
+            <% if (block.soLuong !== null) { %> · Số mục: <b><%= block.soLuong %></b><% } %>
+          </div>
+
+          <% if (block.mauNoiDung && block.mauNoiDung.length > 0) { %>
+            <div class="cache-preview">
+              <ol>
+                <% block.mauNoiDung.forEach(function(line) { %>
+                  <li><%= line %></li>
+                <% }) %>
+              </ol>
+              <% if (block.soLuong > block.mauNoiDung.length) { %>
+                <div style="color:var(--text-muted);margin-top:4px;">... và <%= block.soLuong - block.mauNoiDung.length %> mục khác</div>
+              <% } %>
+            </div>
+          <% } %>
+
+          <form method="POST" action="/quanly/bo-nho-dem/xoa"
+                onsubmit="return confirm('Xoá riêng khối \'<%= block.key %>\'? Không thể hoàn tác.');">
+            <input type="hidden" name="key" value="<%= block.key %>" />
+            <button type="submit" class="danger">🗑 Xoá riêng khối này</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly/thoat">· Thoát</a>
+  </footer>
+
+</body>
+</html>

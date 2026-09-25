@@ -1,6 +1,31 @@
 {
-  "name": "node-project",
-  "version": "1.0.0",
-  "private": true,
-  "description": "A blank Node.js project."
+  "name": "thu-vien-dang-bo-xuan-giang",
+  "version": "2.0.0",
+  "description": "Thư viện điện tử Đảng bộ xã Xuân Giang — đọc tài liệu có TTS + highlight, mindmap, tin tức đề xuất, video Youtube, Danh nhân & Địa điểm.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
+    "csv-parse": "^5.6.0",
+    "dotenv": "^16.6.1",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.2",
+    "fast-xml-parser": "^5.3.3",
+    "firebase-admin": "^13.5.0",
+    "mammoth": "^1.11.0",
+    "node-fetch": "^3.3.2",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }

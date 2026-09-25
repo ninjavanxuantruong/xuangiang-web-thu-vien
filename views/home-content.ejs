@@ -1,0 +1,273 @@
+
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">ĐẢNG BỘ XÃ XUÂN GIANG</div>
+      <div class="subtitle">Tài liệu • Tin tức • Nghiên cứu</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+  <!-- ====== Banner Góp ý — nổi bật, đặt ngay đầu trang ====== -->
+  <div class="section" style="background:#fff6e0;border-top:1px solid #f0dca0;border-bottom:1px solid #f0dca0;padding:16px 20px;">
+    <a href="/gop-y" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;">
+      <div style="width:40px;height:40px;border-radius:50%;background:#c46a1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💬</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;color:#8a4a10;">Góp ý xây dựng Đảng bộ, chính quyền</div>
+        <div style="font-size:12px;color:#8a4a10;opacity:0.85;">Chỉ mất vài giây</div>
+      </div>
+      <div style="background:#c46a1f;color:#fff;font-size:12px;padding:8px 16px;border-radius:16px;flex-shrink:0;">Gửi góp ý →</div>
+    </a>
+
+    <% if (typeof surveys !== "undefined" && surveys && surveys.length > 0) { %>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0dca0;display:flex;flex-direction:column;gap:6px;">
+        <% surveys.forEach(function(s) { %>
+          <a href="<%= s.link %>" target="_blank" rel="noopener"
+             style="display:block;font-size:13px;color:#8a4a10;text-decoration:none;background:#fffaf0;border:1px solid #f0dca0;border-radius:8px;padding:8px 12px;">
+            📋 <%= s.name %>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ====== Mosaic tổng quan (kiểu NHK World) — 6 khối cố định theo
+       chủ đề, mỗi khối tự xoay vòng đúng nội dung của mình ====== -->
+<div class="mosaic-grid">
+  <div class="mosaic-zone mosaic-zone--a" data-mosaic-zone="taiLieu"></div>
+  <div class="mosaic-zone mosaic-zone--b" data-mosaic-zone="danhNhan"></div>
+  <div class="mosaic-zone mosaic-zone--c" data-mosaic-zone="videoXa"></div>
+  <div class="mosaic-zone mosaic-zone--d" data-mosaic-zone="tinXa"></div>
+  <div class="mosaic-zone mosaic-zone--e" data-mosaic-zone="baiDeXuat"></div>
+  <div class="mosaic-zone mosaic-zone--f" data-mosaic-zone="videoDeXuat"></div>
+  <div class="mosaic-zone mosaic-zone--g" data-mosaic-zone="tinTheGioi"></div>
+</div>
+  <script type="application/json" id="mosaicData"><%- JSON.stringify(mosaicZones) %></script>
+
+  
+
+  <!-- ====== Danh mục tài liệu — hiện HẾT, tự xuống dòng (CSS pill-row đã đổi) ====== -->
+  <div class="section">
+    <div class="section-title">Danh mục tài liệu</div>
+    <div class="pill-row">
+      <% types.forEach(function(type) { %>
+        <a class="pill" href="/loai/<%= encodeURIComponent(type) %>"><%= type %></a>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- ====== Tài liệu nổi bật: chạy marquee liên tục NGƯỢC CHIỀU so với
+       khối Danh nhân bên dưới, thay vì hiện tĩnh toàn bộ như trước ====== -->
+  <% if (featuredDocs && featuredDocs.length > 0) { %>
+    <div class="section section-featured">
+      <div class="section-title">Tài liệu nổi bật theo từng danh mục</div>
+      <div class="fd-marquee">
+        <div class="fd-track" style="animation-duration: <%= Math.max(featuredDocs.length * 3, 10) %>s;">
+          <% [...featuredDocs, ...featuredDocs].forEach(function(doc) { %>
+            <a class="card" href="/doc/<%= encodeURIComponent(doc.name) %>">
+              <div class="card-thumb" data-doc-cover="<%= doc.name %>"></div>
+              <div class="card-title"><%= doc.name %></div>
+              <div class="card-tag"><%= doc.type %></div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Danh nhân & Địa điểm (khối riêng, tách khỏi Danh mục tài liệu) ====== -->
+  <% if (nhanVatPreview && nhanVatPreview.length > 0) { %>
+    <div class="section" style="background:#f6f1e6;border-top:1px solid #e7dcc2;border-bottom:1px solid #e7dcc2;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-title" style="margin:0;">Danh nhân & Địa điểm</div>
+        <a href="/nguoi-va-dat" style="font-size:12.5px;font-weight:600;color:#8a4a10;text-decoration:none;white-space:nowrap;">Xem tất cả →</a>
+      </div>
+      <div class="dn-marquee">
+        <div class="dn-track" style="animation-duration: <%= Math.max(nhanVatPreview.length * 3, 10) %>s;">
+          <% [...nhanVatPreview, ...nhanVatPreview].forEach(function(item) { %>
+            <a class="card" href="/nguoi-va-dat/<%= encodeURIComponent(item.name) %>">
+              <div class="card-thumb">
+                <% if (item.images && item.images.length > 0) { %>
+                  <img src="<%= item.images[0] %>" alt="<%= item.name %>" loading="lazy" />
+                <% } else { %>
+                  🏛️
+                <% } %>
+              </div>
+              <div class="card-title"><%= item.name %></div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Video mới nhất (nền tối) — carousel xoay vòng, video giữa tự phát ====== -->
+  <% if (latestVideos && latestVideos.length > 0) { %>
+    <div class="section section-video">
+      <div class="section-title">Video mới nhất</div>
+
+      <div class="video-carousel-wrap" id="videoCarousel"></div>
+      <div class="vc-progress"><div class="vc-progress-bar" id="vcProgressBar"></div></div>
+
+      <div style="text-align:center;margin-top:16px;">
+        <a class="btn-pill" href="https://www.youtube.com/@XU%C3%82NGIANGNG%C3%80YM%E1%BB%9AI" target="_blank" rel="noopener">
+          Xem thêm trên Youtube
+        </a>
+      </div>
+    </div>
+
+    <script>
+      // dữ liệu cho carousel — mỗi phần tử có videoId, title, thumbnail (xem youtube.js)
+      window.VIDEOS = <%- JSON.stringify(latestVideos) %>;
+    </script>
+    <script src="/public/video-carousel.js"></script>
+  <% } %>
+
+  <!-- ====== Tin tức nổi bật của xã (nền tối) — 1 tin nổi bật lớn + danh sách ====== -->
+  <% if (xaNews && xaNews.length > 0) { %>
+    <div class="section section-video">
+      <div class="section-title">Tin tức nổi bật của xã</div>
+
+      <div class="xn-wrap">
+        <a class="xn-featured" id="xnFeaturedLink" href="<%= xaNews[0].link %>" target="_blank" rel="noopener">
+          <div class="xn-featured-imgs" id="xnFeaturedImgs">
+            <% (xaNews[0].images && xaNews[0].images.length ? xaNews[0].images : [xaNews[0].image]).forEach(function(src, i) { %>
+              <img src="<%= src %>" alt="<%= xaNews[0].title %>" loading="<%= i === 0 ? 'eager' : 'lazy' %>" class="<%= i === 0 ? 'is-active' : '' %>" />
+            <% }) %>
+          </div>
+          <div class="xn-overlay">
+            <p class="xn-title" id="xnFeaturedTitle"><%= xaNews[0].title %></p>
+            <div class="xn-date" id="xnFeaturedDate" style="<%= xaNews[0].date ? '' : 'display:none' %>"><%= xaNews[0].date || '' %></div>
+          </div>
+        </a>
+
+        <div class="xn-list">
+          <% xaNews.slice(1, 6).forEach(function(item) { %>
+            <a class="xn-item" href="<%= item.link %>" target="_blank" rel="noopener">
+              <div class="xn-thumb"><img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy" /></div>
+              <div class="xn-body">
+                <p class="xn-title"><%= item.title %></p>
+                <% if (item.date) { %><div class="xn-date"><%= item.date %></div><% } %>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Tối đa 5 bài gần nhất — script luân phiên lấy từng bài lên làm
+      // "bài chính" (chạy hết ảnh, tối thiểu 10s/bài) rồi đổi bài khác.
+      window.XN_FEATURED_NEWS = <%- JSON.stringify(xaNews.slice(0, 5)) %>;
+    </script>
+    <script src="/public/news-featured-slideshow.js"></script>
+  <% } %>
+
+  <!-- ====== Bài đọc đề xuất — carousel ảnh lớn, vuốt được (xem
+       initHeroCarousel trong main.js) ====== -->
+  <% if (suggestedPosts && suggestedPosts.length > 0) { %>
+    <div class="section">
+      <div class="section-title">Bài đọc đề xuất</div>
+      <div class="hero-banner" data-hero-carousel data-swipe id="heroBanner">
+        <% suggestedPosts.slice(0, 6).forEach(function(post, i) { %>
+          <a href="<%= post.link %>" target="_blank" rel="noopener" data-slide style="<%= i === 0 ? '' : 'display:none' %>">
+            <img src="<%= post.image %>" alt="<%= post.title %>" />
+            <div class="overlay">
+              <span class="badge"><%= post.name %></span>
+              <div class="headline"><%= post.title %></div>
+            </div>
+          </a>
+        <% }) %>
+        <div class="hero-dots">
+          <% suggestedPosts.slice(0, 6).forEach(function(post, i) { %>
+            <span data-dot class="<%= i === 0 ? 'active' : '' %>"></span>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Video mới nhất theo từng kênh (nền sáng, mỗi thẻ 1 kênh) —
+       giờ hiện 2 video/lần, tự quay vòng NGƯỢC CHIỀU so với khối
+       "Bài đọc đề xuất" ở trên để tạo đa dạng ====== -->
+  <% if (channelVideos && channelVideos.length > 0) { %>
+    <div class="section">
+      <div class="section-title">Video mới nhất từ các kênh</div>
+        <div
+          class="cv-row"
+          data-rotator
+          data-rotator-count="2"
+          data-rotator-count-desktop="4"
+          data-rotator-interval="4500"
+          data-rotator-reverse="true"
+        >
+        <% channelVideos.forEach(function(v) { %>
+          <a class="cv-card" href="<%= v.link %>" target="_blank" rel="noopener">
+            <div class="cv-thumb">
+              <img src="<%= v.thumbnail %>" alt="<%= v.title %>" loading="lazy" />
+              <div class="cv-channel-badge"><%= v.channelName %></div>
+              <div class="cv-play">▶</div>
+            </div>
+            <div class="cv-body">
+              <p class="cv-title"><%= v.title %></p>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+<% if (worldNews && worldNews.length > 0) { %>
+  <div class="section">
+    <div class="section-title">Điểm báo quốc tế</div>
+    <div
+      class="wn-spotlight"
+      data-wn-spotlight
+      data-wn-mobile-count="2"
+      data-wn-desktop-count="4"
+      data-wn-desktop-breakpoint="720"
+      data-wn-spotlight-interval="2800"
+    >
+      <% worldNews.forEach(function(item) { %>
+        <a class="wn-item" href="/tin-the-gioi/<%= item.id %>">
+          <div class="wn-thumb">
+            <img class="wn-img" loading="lazy" alt="<%= item.title %>"
+               src="<%= item.image %>" />
+            <div class="wn-marquee" data-title="<%= item.title %>">
+              <span class="wn-type-text"></span><span class="wn-type-cursor"></span>
+            </div>
+          </div>
+          <div class="wn-body">
+            <div class="wn-title"><%= item.title %></div>
+            <div class="wn-meta"><%= item.sourceName %> · bản dịch AI</div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+  <footer class="site-footer">
+    Ban Xây dựng Đảng xã Xuân Giang
+    <a class="admin-link" href="/gop-y">· Góp ý</a>
+    <a class="admin-link" href="/quanly">· Quản lý</a>
+  </footer>
+
+  <!-- ====== Nút nhạc nền + tự cuộn trang lên/xuống (xem
+       public/music-autoscroll.js) ====== -->
+  <button id="musicToggleBtn" class="music-toggle-btn" aria-label="Bật/tắt nhạc nền">🎵</button>
+  <audio id="bgMusic" loop preload="none">
+    <source src="https://raw.githubusercontent.com/ninjavanxuantruong/mp3vietnam2/main/N%E1%BA%AFng%20M%E1%BB%9Bi%20Tr%C3%AAn%20Qu%C3%AA%20H%C6%B0%C6%A1ng%20(Official%20MV).mp3" type="audio/mpeg" />
+  </audio>
+
+  <script type="application/json" id="initialSuggestedPosts"><%- JSON.stringify(suggestedPosts || []) %></script>
+  
+  <script src="/public/main.js"></script>
+  <script src="/public/rotator.js"></script>
+<script src="/public/mosaic-hero.js"></script>
+<script src="/public/world-news-spotlight.js"></script>
+  <script src="/public/music-autoscroll.js"></script>
+</body>
+</html>

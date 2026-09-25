@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= doc.name %></title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <% if (doc.type === "pdf") { %>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <% } %>
+  <style>
+    /* Toàn bộ trang PDF được coi là 1 "đoạn" TTS — khi đang đọc trang nào,
+       khung ảnh trang đó được viền nhẹ để người dùng biết đang đọc tới đâu
+       (đơn giản hơn overlay tô từng chữ như bản cũ, nhưng vẫn đủ để theo dõi). */
+    .pdf-page.sentence-highlight {
+      outline: 3px solid rgba(166, 38, 38, 0.5);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    .pdf-page {
+      margin: 0 auto 16px;
+      max-width: 100%;
+    }
+    .pdf-page canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+      box-shadow: var(--shadow-card);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reader-toolbar">
+    <button data-tts-play>▶ Đọc trang</button>
+    <button data-tts-stop>■ Dừng</button>
+    <button data-speed-down>Chậm</button>
+    <button data-speed-up>Nhanh</button>
+    <button data-font-smaller>Chữ nhỏ</button>
+    <button data-font-bigger>Chữ to</button>
+    <button data-open-listen-mode>🎧 Nghe khi di chuyển</button>
+    <button data-toggle-theme>🌙 Tối</button>
+    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.tldr) { %>
+      <button id="toggleSummaryBtn">📝 Xem tóm tắt</button>
+    <% } %>
+    <a href="/" style="margin-left:auto;font-size:12px;color:var(--text-muted);">← Trang chính</a>
+  </div>
+
+  <div style="display:none" data-doc-name><%= doc.name %></div>
+
+  <div class="reader-content">
+    <h1 style="font-size:1.3em;margin-bottom:4px;"><%= doc.name %></h1>
+
+    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.tldr) { %>
+      <div id="summaryView" style="display:none;background:var(--bg-page);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px 16px;margin:12px 0 20px;">
+        <div style="font-size:11px;font-weight:700;color:var(--color-brand);letter-spacing:.03em;margin-bottom:4px;">TÓM TẮT NHANH (TL;DR)</div>
+        <div style="font-size:14px;line-height:1.5;margin-bottom:10px;"><%= summary.tldr %></div>
+
+        <% if (summary.paragraphSummaries && summary.paragraphSummaries.length > 0) { %>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.03em;margin-bottom:6px;">TÓM TẮT THEO TỪNG PHẦN</div>
+          <div style="margin-top:10px;font-size:13px;line-height:1.6;">
+            <% summary.paragraphSummaries.forEach(function(s) { %>
+              <% if (s.isHeading) { %>
+                <div style="margin:10px 0 4px;"><strong><%= s.text %></strong></div>
+              <% } else if (s.text) { %>
+                <div style="margin-bottom:6px;"><%= s.text %></div>
+              <% } %>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div id="fullContentView">
+    <% if (doc.type === "word") { %>
+      <% textBlocks.forEach(function(html) { %>
+        <p class="tts-chunk"><%- html %></p>
+      <% }) %>
+    <% } %>
+
+    <% if (doc.type === "pdf") { %>
+      <div id="pdfContainer"></div>
+      <p style="text-align:center;color:var(--text-muted);font-size:12px;">Đang tải tài liệu...</p>
+    <% } %>
+
+    <% if (doc.type === "youtube") { %>
+      <div style="position:relative;padding-top:56.25%;border-radius:var(--radius-md);overflow:hidden;">
+        <iframe
+          src="<%= embedUrl %>"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+      </div>
+    <% } %>
+    </div>
+  </div>
+
+  <script src="/public/main.js"></script>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("toggleSummaryBtn");
+      if (!btn) return; // tài liệu không có tóm tắt (PDF/Youtube, hoặc chưa lấy được nội dung)
+
+      var summaryView = document.getElementById("summaryView");
+      var fullView = document.getElementById("fullContentView");
+
+      btn.addEventListener("click", function () {
+        var showingSummary = summaryView.style.display !== "none";
+        if (showingSummary) {
+          summaryView.style.display = "none";
+          fullView.style.display = "";
+          btn.textContent = "📝 Xem tóm tắt";
+        } else {
+          summaryView.style.display = "";
+          fullView.style.display = "none";
+          btn.textContent = "📄 Xem đầy đủ";
+        }
+      });
+    })();
+  </script>
+
+  <% if (doc.type === "pdf") { %>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      const container = document.getElementById("pdfContainer");
+      const pdfUrl = "<%= pdfUrl %>";
+
+      try {
+        const pdfDoc = await pdfjsLib.getDocument({ url: pdfUrl }).promise;
+
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          const page = await pdfDoc.getPage(pageNum);
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale });
+          const dpr = window.devicePixelRatio || 1;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          const ctx = canvas.getContext("2d");
+          const transform = dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null;
+
+          await page.render({ canvasContext: ctx, viewport, transform }).promise;
+
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((it) => it.str).join(" ").trim();
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "pdf-page tts-chunk";
+          wrapper.style.maxWidth = viewport.width + "px";
+          wrapper.setAttribute("data-page", pageNum);
+          wrapper.appendChild(canvas);
+
+          // Text ẩn dùng để đọc TTS (không hiển thị đè lên ảnh trang)
+          const hiddenText = document.createElement("span");
+          hiddenText.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);";
+          hiddenText.textContent = pageText;
+          wrapper.appendChild(hiddenText);
+
+          container.appendChild(wrapper);
+        }
+
+        container.previousElementSibling?.remove?.(); // ẩn dòng "Đang tải..."
+        document.querySelector("p[style*='Đang tải']")?.remove();
+
+        // Đã thêm .tts-chunk sau khi trang tải xong -> báo lại cho trình
+        // phát TTS trong main.js quét lại danh sách đoạn cần đọc.
+        if (window.initReaderPlayer) window.initReaderPlayer();
+      } catch (err) {
+        console.error("Lỗi tải PDF:", err);
+        container.innerHTML = '<p style="color:var(--color-brand);">Không tải được PDF. Vui lòng kiểm tra lại link.</p>';
+      }
+    });
+  </script>
+  <% } %>
+</body>
+</html>

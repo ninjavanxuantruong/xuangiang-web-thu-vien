@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thống kê truy cập — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .stat-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .number {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--color-brand);
+    }
+    .stat-box .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 140px;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 4px;
+    }
+    .bar-chart .bar {
+      flex: 1;
+      background: var(--color-brand);
+      border-radius: 3px 3px 0 0;
+      min-height: 2px;
+      position: relative;
+    }
+    .bar-chart .bar span {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .day-labels {
+      display: flex;
+      gap: 4px;
+      padding: 0 4px;
+      margin-top: 6px;
+    }
+    .day-labels span {
+      flex: 1;
+      text-align: center;
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Ban Xây dựng Đảng xã Xuân Giang</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/gop-y" class="account-btn" style="margin-right:8px;">💬 Góp ý</a>
+    <a href="/quanly/bo-nho-dem" class="account-btn" style="margin-right:8px;">🗂 Bộ nhớ đệm</a>
+    <a href="/quanly/thoat" class="account-btn">Thoát</a>
+  </header>
+
+  <div class="section">
+    <form method="GET" action="/quanly/thong-ke" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;">
+      <input type="month" name="thang" value="<%= monthKey %>" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-page);color:var(--text-primary);font-size:13px;" />
+      <button type="submit" style="background:var(--text-primary);color:var(--bg-page);border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;">Xem</button>
+      <a href="/quanly/thong-ke/xuat?thang=<%= monthKey %>" style="background:var(--text-primary);color:var(--bg-page);border:none;border-radius:6px;padding:8px 14px;font-size:12px;text-decoration:none;">⬇ Xuất CSV</a>
+    </form>
+
+    <form method="POST" action="/quanly/thong-ke/xoa" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;" onsubmit="return confirm('Xoá thống kê tháng ' + this.thang.value + '? Không thể hoàn tác.');">
+      <input type="hidden" name="thang" value="<%= monthKey %>" />
+      <button type="submit" style="background:var(--color-brand);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;">🗑 Xoá tháng <%= monthKey %></button>
+    </form>
+
+    <form method="POST" action="/quanly/thong-ke/xoa" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:20px;" onsubmit="return confirm('Xoá TOÀN BỘ thống kê năm ' + this.nam.value + '? Không thể hoàn tác.');">
+      <input type="text" name="nam" placeholder="Năm, vd 2026" required style="width:100px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-page);color:var(--text-primary);font-size:13px;" />
+      <button type="submit" style="background:var(--color-brand);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;">🗑 Xoá theo năm</button>
+    </form>
+    <div class="section-title">Thống kê lượt truy cập — Tháng <%= stats.month %></div>
+
+    <div class="stat-summary">
+      <div class="stat-box">
+        <div class="number"><%= stats.total || 0 %></div>
+        <div class="label">Tổng lượt truy cập tháng này</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">
+          <%
+            const days = Object.keys(stats.byDay || {});
+            const todayKey = new Date().toISOString().split("T")[0];
+          %>
+          <%= (stats.byDay && stats.byDay[todayKey]) || 0 %>
+        </div>
+        <div class="label">Lượt truy cập hôm nay</div>
+      </div>
+    </div>
+
+    <%
+      const dayEntries = Object.entries(stats.byDay || {}).sort((a, b) => a[0].localeCompare(b[0]));
+      const maxCount = Math.max(1, ...dayEntries.map(([, count]) => count));
+    %>
+
+    <% if (dayEntries.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có dữ liệu truy cập tháng này.</p>
+    <% } else { %>
+      <div class="bar-chart">
+        <% dayEntries.forEach(function([day, count]) { %>
+          <div class="bar" style="height: <%= Math.round((count / maxCount) * 100) %>%;">
+            <span><%= count %></span>
+          </div>
+        <% }) %>
+      </div>
+      <div class="day-labels">
+        <% dayEntries.forEach(function([day]) { %>
+          <span><%= day.slice(8) %></span>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <%
+      // Thống kê theo tuần — gộp từ byDay có sẵn, KHÔNG cần đọc/ghi thêm gì
+      // từ Firestore, chỉ là tính toán khi hiển thị.
+      const weeks = [];
+      for (let i = 0; i < dayEntries.length; i += 7) {
+        const chunk = dayEntries.slice(i, i + 7);
+        const total = chunk.reduce((sum, [, count]) => sum + count, 0);
+        weeks.push({ from: chunk[0][0], to: chunk[chunk.length - 1][0], total });
+      }
+    %>
+    <% if (weeks.length > 0) { %>
+      <div class="section-title" style="margin-top:24px;">Theo tuần</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <% weeks.forEach(function(w, i) { %>
+          <div style="display:flex;justify-content:space-between;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:8px;padding:10px 14px;font-size:13px;">
+            <span>Tuần <%= i + 1 %> (<%= w.from.slice(8) %> – <%= w.to.slice(8) %>)</span>
+            <strong><%= w.total %> lượt</strong>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+  </footer>
+
+</body>
+</html>
