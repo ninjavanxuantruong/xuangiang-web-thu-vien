@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bộ nhớ đệm — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .cache-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .cache-block .meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .cache-block .meta b { color: var(--text-primary); }
+    .cache-preview {
+      font-size: 12.5px;
+      line-height: 1.7;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--bg-page);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+    .cache-preview ol { margin: 0; padding-left: 18px; }
+    .danger {
+      background: var(--color-brand);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .usage-bar {
+      height: 10px;
+      background: var(--bg-page);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 6px 0 10px;
+    }
+    .usage-bar > span {
+      display: block;
+      height: 100%;
+      background: var(--color-brand);
+    }
+    .usage-bar.warn > span { background: #d98a00; }
+    .cache-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 10px; }
+    .cache-table th, .cache-table td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+    .cache-table th { color: var(--text-muted); font-weight: 600; }
+    .cache-table .small-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11.5px;
+      cursor: pointer;
+      color: var(--text-primary);
+    }
+    h3.group-title { font-size: 15px; margin: 26px 0 10px; }
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Bộ nhớ đệm (cache)</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/gop-y" class="account-btn" style="margin-right:8px;">💬 Góp ý</a>
+    <a href="/quanly/nhat-ky-loi" class="account-btn">🩺 Nhật ký lỗi</a>
+  </header>
+
+  <%
+    function fmtBytes(b) {
+      b = Number(b) || 0;
+      if (b >= 1073741824) return (b / 1073741824).toFixed(2) + " GB";
+      if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB";
+      if (b >= 1024) return Math.round(b / 1024) + " KB";
+      return b + " B";
+    }
+    function pct(used, max) {
+      if (!max) return 0;
+      return Math.min(100, Math.round((used / max) * 100));
+    }
+    var _pdf = (typeof pdfStats !== "undefined" && pdfStats) ? pdfStats : null;
+    var _audio = (typeof audioStats !== "undefined" && audioStats) ? audioStats : null;
+    var _disk = (typeof disk !== "undefined" && disk) ? disk : null;
+    var _word = (typeof wordItems !== "undefined" && wordItems) ? wordItems : [];
+  %>
+
+  <div class="section">
+    <h3 class="group-title" style="margin-top:0;">💾 Bộ nhớ đệm trên đĩa server</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-top:0;">
+      Đây chỉ là bản lưu tạm để mọi người xem chung, đỡ tải lại. Xoá đi thì lần mở
+      kế tiếp hệ thống tự tải lại — không mất dữ liệu gốc.
+      <% if (_disk) { %>
+        Đĩa còn trống: <b><%= fmtBytes(_disk.freeBytes) %></b> / <%= fmtBytes(_disk.totalBytes) %>.
+      <% } %>
+    </p>
+
+    <% if (_pdf) { %>
+      <div class="cache-block">
+        <div class="meta">
+          PDF đã lưu (thư mục <b>pdf-cache</b>) · <b><%= _pdf.files %></b> file ·
+          Đang dùng <b><%= fmtBytes(_pdf.bytes) %></b> / trần <b><%= fmtBytes(_pdf.maxBytes) %></b>
+        </div>
+        <div class="usage-bar <%= pct(_pdf.bytes, _pdf.maxBytes) >= 85 ? 'warn' : '' %>"><span style="width:<%= pct(_pdf.bytes, _pdf.maxBytes) %>%"></span></div>
+
+        <% if (_pdf.items.length > 0) { %>
+          <table class="cache-table">
+            <tr><th>Tài liệu</th><th>Dung lượng</th><th>Lưu lúc</th><th></th></tr>
+            <% _pdf.items.forEach(function(it) { %>
+              <tr>
+                <td><%= it.name || it.id %></td>
+                <td><%= fmtBytes(it.bytes) %></td>
+                <td><%= it.savedAt %></td>
+                <td>
+                  <form method="POST" action="/quanly/bo-nho-dem/xoa-pdf" style="margin:0;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <input type="hidden" name="id" value="<%= it.id %>" />
+                    <button type="submit" class="small-btn">Xoá</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </table>
+        <% } %>
+
+        <form method="POST" action="/quanly/bo-nho-dem/xoa-pdf"
+              onsubmit="return confirm('Xoá TOÀN BỘ PDF đã lưu tạm? Lần mở kế tiếp sẽ tải lại từ Drive.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button type="submit" class="danger">🗑 Xoá hết PDF đã lưu</button>
+        </form>
+      </div>
+    <% } %>
+
+    <% if (_audio) { %>
+      <div class="cache-block">
+        <div class="meta">
+          Giọng đọc đã tạo (thư mục <b>audio-cache</b>) · <b><%= _audio.files %></b> đoạn ·
+          Đang dùng <b><%= fmtBytes(_audio.bytes) %></b> / trần <b><%= fmtBytes(_audio.maxBytes) %></b>
+        </div>
+        <div class="usage-bar <%= pct(_audio.bytes, _audio.maxBytes) >= 85 ? 'warn' : '' %>"><span style="width:<%= pct(_audio.bytes, _audio.maxBytes) %>%"></span></div>
+        <form method="POST" action="/quanly/bo-nho-dem/xoa-audio"
+              onsubmit="return confirm('Xoá TOÀN BỘ giọng đọc đã lưu? Người nghe kế tiếp sẽ khiến hệ thống gọi lại dịch vụ giọng đọc.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button type="submit" class="danger">🗑 Xoá hết giọng đọc đã lưu</button>
+        </form>
+      </div>
+    <% } %>
+
+    <h3 class="group-title">📄 Văn bản Word đã lưu (Firestore)</h3>
+    <% if (_word.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có tài liệu Word nào được lưu.</p>
+    <% } else { %>
+      <div class="cache-block">
+        <table class="cache-table">
+          <tr><th>Tài liệu</th><th>Số đoạn</th><th>Số cụm</th><th>Lưu lúc</th><th></th></tr>
+          <% _word.forEach(function(it) { %>
+            <tr>
+              <td><%= it.name || it.key %></td>
+              <td><%= it.total %></td>
+              <td><%= it.chunkCount %></td>
+              <td><%= it.updatedAt %></td>
+              <td>
+                <form method="POST" action="/quanly/bo-nho-dem/xoa-word" style="margin:0;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="key" value="<%= it.key %>" />
+                  <button type="submit" class="small-btn">Xoá</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </table>
+        <form method="POST" action="/quanly/bo-nho-dem/xoa-word"
+              onsubmit="return confirm('Xoá TOÀN BỘ văn bản Word đã lưu? Lần mở kế tiếp sẽ tải lại từ Drive.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button type="submit" class="danger">🗑 Xoá hết văn bản Word đã lưu</button>
+        </form>
+      </div>
+    <% } %>
+
+    <h3 class="group-title">📰 Bộ nhớ đệm tin tức (Firestore)</h3>
+    <p style="font-size:13px;color:var(--text-muted);">
+      Mỗi khối dưới đây là 1 mảng tin tức được lấy 1 lần/ngày (Bài đọc đề xuất,
+      Điểm báo quốc tế...) rồi lưu lại để mọi người xem chung, đỡ tốn tải lại
+      liên tục. Xoá 1 khối hoặc xoá hết để hệ thống tự lấy dữ liệu mới ngay
+      lượt xem kế tiếp.
+    </p>
+
+    <form method="POST" action="/quanly/bo-nho-dem/xoa" class="toolbar-row"
+          onsubmit="return confirm('Xoá TOÀN BỘ bộ nhớ đệm tin tức? Hệ thống sẽ phải lấy lại từ đầu cho lượt xem kế tiếp. Không thể hoàn tác.');">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="danger">🗑 Xoá HẾT, làm lại từ đầu</button>
+    </form>
+
+    <% if (items.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có khối cache nào được lưu.</p>
+    <% } else { %>
+      <% items.forEach(function(block) { %>
+        <div class="cache-block">
+          <div class="meta">
+            Khối: <b><%= block.key %></b>
+            · Ngày cache: <b><%= block.dayKey || "(không rõ)" %></b>
+            · Cập nhật lúc: <b><%= block.updatedAt || "(không rõ)" %></b>
+            <% if (block.soLuong !== null) { %> · Số mục: <b><%= block.soLuong %></b><% } %>
+          </div>
+
+          <% if (block.mauNoiDung && block.mauNoiDung.length > 0) { %>
+            <div class="cache-preview">
+              <ol>
+                <% block.mauNoiDung.forEach(function(line) { %>
+                  <li><%= line %></li>
+                <% }) %>
+              </ol>
+              <% if (block.soLuong > block.mauNoiDung.length) { %>
+                <div style="color:var(--text-muted);margin-top:4px;">... và <%= block.soLuong - block.mauNoiDung.length %> mục khác</div>
+              <% } %>
+            </div>
+          <% } %>
+
+          <form method="POST" action="/quanly/bo-nho-dem/xoa"
+                onsubmit="return confirm('Xoá riêng khối \'<%= block.key %>\'? Không thể hoàn tác.');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="key" value="<%= block.key %>" />
+            <button type="submit" class="danger">🗑 Xoá riêng khối này</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly/thoat">· Thoát</a>
+  </footer>
+
+</body>
+</html>
