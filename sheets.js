@@ -128,21 +128,12 @@ function convertDriveLink(link) {
  * faceLink / NguonTrang là link + tên nguồn tin bên ngoài dùng cho phần
  * "Bài đọc đề xuất" (newsFinder.js sẽ đọc 2 cột này), KHÔNG cần sheet mới.
  */
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 /**
  * Lấy toàn bộ danh sách tài liệu từ Google Sheet (PDF_SHEET_URL trong .env).
  * Cột đang dùng: type | name | url | summaryD | summaryE | summaryF
  * (Cột faceLink/NguonTrang cho "Bài đọc đề xuất" đã tách sang sheet riêng —
  * xem getSuggestedSources(), SUGGESTED_SHEET_URL trong .env.)
  */
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 export async function getDocuments() {
   const url = process.env.PDF_SHEET_URL;
   const records = await fetchSheet(url);
@@ -159,50 +150,16 @@ export async function getDocuments() {
         url: link,
         summaryD: r.summaryD || r.D || r.tomtat1 || "",
         summaryE: r.summaryE || r.E || r.tomtat2 || "",
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        summaryF: r.summaryF || r.F || r.tomtat3 || "",
-        // Cột dùng cho phần "Bài đọc đề xuất" (newsFinder.js)
-        sourceLink: r.faceLink || r.G || "",
-        sourceName: r.NguonTrang || r.faceName || ""
-      };
-    })
-    .filter((item) => item.url || item.sourceLink);
-=======
-=======
->>>>>>> Stashed changes
         summaryF: r.summaryF || r.F || r.tomtat3 || ""
       };
     })
     .filter((item) => item.url);
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 }
 
 /**
  * Danh sách nguồn tin bên ngoài duy nhất (bỏ trùng link) để đưa cho
  * newsFinder.js đi tìm bài mới nhất + ảnh của từng nguồn.
  */
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-export async function getSuggestedSources() {
-  const docs = await getDocuments();
-  const seen = new Set();
-  const sources = [];
-
-  for (const doc of docs) {
-    if (!doc.sourceLink) continue;
-    if (seen.has(doc.sourceLink)) continue;
-    seen.add(doc.sourceLink);
-    sources.push({
-      link: doc.sourceLink,
-      name: doc.sourceName || doc.sourceLink
-    });
-=======
-=======
->>>>>>> Stashed changes
 /**
  * Danh sách nguồn tin cho "Bài đọc đề xuất" — đọc từ 1 Google Sheet RIÊNG
  * (SUGGESTED_SHEET_URL trong .env), tách hẳn khỏi sheet tài liệu chính.
@@ -225,21 +182,10 @@ export async function getSuggestedSources() {
     if (seen.has(link)) continue;
     seen.add(link);
     sources.push({ link, name: name || link });
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   }
 
   return sources;
 }
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 /**
  * Danh sách loại tài liệu (dùng cho khối "Danh mục tài liệu" ở trang chủ).
  */
