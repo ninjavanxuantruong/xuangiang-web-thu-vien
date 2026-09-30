@@ -153,7 +153,12 @@ const xaNewsCache = createSwrCache({
   load: loadXaNews,
   fallback: [],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "xa-news"
+>>>>>>> Stashed changes
 =======
   isEmpty: (v) => !v || v.length === 0,
   persistKey: "xa-news"

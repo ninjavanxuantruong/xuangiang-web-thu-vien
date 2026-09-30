@@ -367,8 +367,11 @@ export async function getSuggestedPosts(sources) {
  */
 export async function getSuggestedPostsCached(sources) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   return getOrRefresh("bai-doc-de-xuat", () => getSuggestedPosts(sources));
 =======
+=======
+>>>>>>> Stashed changes
   return getOrRefresh("bai-doc-de-xuat", async () => {
     const result = await getSuggestedPosts(sources);
     const soThanhCong = result.filter((p) => p.found).length;
@@ -386,6 +389,9 @@ export async function getSuggestedPostsCached(sources) {
     // trắng cho cả ngày — kể cả sau khi admin đã xoá cache thủ công.
     isEmpty: (data) => !Array.isArray(data) || data.length === 0 || !data.some((p) => p.found)
   });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 

@@ -92,7 +92,12 @@ const latestVideosCache = createSwrCache({
   load: loadLatestVideos,
   fallback: [],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "youtube-latest"
+>>>>>>> Stashed changes
 =======
   isEmpty: (v) => !v || v.length === 0,
   persistKey: "youtube-latest"

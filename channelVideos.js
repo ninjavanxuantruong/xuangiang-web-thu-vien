@@ -141,7 +141,12 @@ const channelVideosCache = createSwrCache({
   load: loadChannelLatestVideos,
   fallback: [],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "channel-videos"
+>>>>>>> Stashed changes
 =======
   isEmpty: (v) => !v || v.length === 0,
   persistKey: "channel-videos"

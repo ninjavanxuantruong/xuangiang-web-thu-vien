@@ -13,8 +13,11 @@
 //                                     1 phút) thay vì chờ trọn một chu kỳ ttlMs.
 //
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // Cách dùng:
 =======
+=======
+>>>>>>> Stashed changes
 // MỚI THÊM — lưu dự phòng lên Firestore (tuỳ chọn, truyền persistKey):
 //   Trước đây RAM trống sau mỗi lần khởi động lại (deploy, Render tự khởi
 //   động lại...) nên NGƯỜI ĐẦU TIÊN vào lúc đó luôn phải chờ lấy dữ liệu
@@ -27,6 +30,9 @@
 //   thêm một tấm đệm cho đúng khoảnh khắc mới khởi động.
 //
 // Cách dùng (persistKey là tuỳ chọn — không truyền thì chạy y hệt bản cũ):
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 //   const cache = createSwrCache({
 //     name: "youtube.js",
@@ -34,12 +40,15 @@
 //     load: async () => [...],          // hàm lấy dữ liệu MỚI (được phép ném lỗi)
 //     fallback: [],                     // giá trị trả về nếu lần đầu tiên đã lỗi
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 //     isEmpty: (v) => !v || v.length === 0
 //   });
 //   export function getX() { return cache.get(); }
 
 export function createSwrCache({ name, ttlMs, load, fallback = null, isEmpty = null, retryMs = 60 * 1000 }) {
 =======
+=======
+>>>>>>> Stashed changes
 //     isEmpty: (v) => !v || v.length === 0,
 //     persistKey: "youtube-latest"      // tên riêng, không trùng cache khác
 //   });
@@ -81,12 +90,19 @@ export function createSwrCache({
   retryMs = 60 * 1000,
   persistKey = null
 }) {
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   let value;
   let hasValue = false;
   let loadedAt = 0;
   let refreshing = null;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+  let restoring = null; // gộp các lượt cùng đọc Firestore lúc RAM còn trống
+>>>>>>> Stashed changes
 =======
   let restoring = null; // gộp các lượt cùng đọc Firestore lúc RAM còn trống
 >>>>>>> Stashed changes
@@ -114,13 +130,19 @@ export function createSwrCache({
           hasValue = true;
           loadedAt = Date.now();
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           if (empty) expireSoon(); // rỗng ngay lần đầu -> đừng cache cả chu kỳ dài
 =======
+=======
+>>>>>>> Stashed changes
           if (empty) {
             expireSoon(); // rỗng ngay lần đầu -> đừng cache cả chu kỳ dài
           } else if (persistKey) {
             writePersisted(persistKey, fresh); // không chờ, không làm chậm người đang xem
           }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         }
       } catch (err) {
@@ -140,7 +162,10 @@ export function createSwrCache({
   }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   // RAM đang trống (vừa khởi động): thử lấy bản dự phòng trên Firestore
   // trước khi đành phải chờ load() thật. Đọc lỗi/không có -> refresh() như cũ.
   function restoreThenServe() {
@@ -167,6 +192,9 @@ export function createSwrCache({
     return restoring;
   }
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   return {
     async get() {
@@ -175,9 +203,15 @@ export function createSwrCache({
         return value;
       }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       return refresh(); // chưa có gì: lần đầu tiên phải chờ
     },
     /** Xoá bản đang giữ để lần get() sau lấy lại từ đầu. */
+=======
+      return restoreThenServe();
+    },
+    /** Xoá bản đang giữ để lần get() sau lấy lại từ đầu (RAM lẫn Firestore). */
+>>>>>>> Stashed changes
 =======
       return restoreThenServe();
     },
@@ -188,7 +222,10 @@ export function createSwrCache({
       value = undefined;
       loadedAt = 0;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
       if (persistKey) {
         firestore
           .collection(PERSIST_COLLECTION)
@@ -196,6 +233,9 @@ export function createSwrCache({
           .delete()
           .catch(() => {});
       }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
   };

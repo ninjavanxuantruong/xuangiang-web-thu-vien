@@ -37,7 +37,12 @@
 
   const SUGGESTED_POLL_MS = 1500; // hỏi lại /api/bai-doc-de-xuat mỗi 1.5s
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const SUGGESTED_MAX_WAIT_MS = 25000; // chờ tối đa 25s, tránh treo mãi
+=======
+  const SUGGESTED_MAX_WAIT_MS = 8000; // chờ tối đa 8s, tránh treo mãi (trước là 25s)
+  const LOAD_GRACE_MS = 4000; // trang về đủ rồi thì chờ ảnh tối đa 4s
+>>>>>>> Stashed changes
 =======
   const SUGGESTED_MAX_WAIT_MS = 8000; // chờ tối đa 8s, tránh treo mãi (trước là 25s)
   const LOAD_GRACE_MS = 4000; // trang về đủ rồi thì chờ ảnh tối đa 4s
@@ -88,7 +93,12 @@
   }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   window.addEventListener("load", () => {
+=======
+  function markLoaded() {
+    if (windowLoaded) return;
+>>>>>>> Stashed changes
 =======
   function markLoaded() {
     if (windowLoaded) return;
@@ -101,8 +111,11 @@
       speedUp = true;
     }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   });
 =======
+=======
+>>>>>>> Stashed changes
   }
 
   window.addEventListener("load", markLoaded);
@@ -112,6 +125,9 @@
   // đã load xong) để màn chờ không kéo dài chỉ vì 1-2 ảnh chậm.
   document.addEventListener("DOMContentLoaded", () => setTimeout(markLoaded, LOAD_GRACE_MS));
   if (document.readyState === "complete") markLoaded();
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
   // ----- Chờ "bài đọc đề xuất" xác định xong hết các nguồn -----

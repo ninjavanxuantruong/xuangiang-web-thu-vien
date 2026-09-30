@@ -17,6 +17,10 @@ let cacheTime = 0;
 let refreshing = null; // lần làm mới đang chạy (nếu có) — để không chạy trùng nhau
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 =======
 
 >>>>>>> Stashed changes

@@ -907,6 +907,7 @@ img {
 @media (max-width: 720px) {
   .mosaic-grid {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(3, 70px) 60px 60px repeat(2, 55px);
     grid-template-areas:
@@ -918,10 +919,15 @@ img {
       "d d e e"
       "g g g g";
 =======
+=======
+>>>>>>> Stashed changes
     /* Chỉ rút ngắn chiều cao mỗi hàng cho vừa màn hình nhỏ — KHÔNG đổi
        grid-template-columns/areas, để giữ ĐÚNG bố cục a-b-c-f-d-e-g như
        PC (12 cột dùng đơn vị fr đã tự co giãn theo màn hình rồi). */
     grid-template-rows: repeat(6, 62px);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   }
 }
@@ -1278,16 +1284,22 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
 =======
+=======
+>>>>>>> Stashed changes
   padding: 12px 16px;
   display: flex;
   flex-wrap: wrap;          /* xuống dòng khi không đủ chỗ -> không tràn ra ngoài nữa */
   align-items: center;
   gap: 10px 14px;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 .pp-cover {
@@ -1302,14 +1314,20 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   font-size: 22px;
 }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 /* Khối giữa — tên podcast, chạy chữ phải sang trái nếu dài hơn khung */
 .pp-title-wrap {
   flex: 1 1 120px;
 =======
+=======
+>>>>>>> Stashed changes
 
 /* Khối tên podcast — chạy chữ phải sang trái nếu dài hơn khung */
 .pp-title-wrap {
   flex: 1 1 160px;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   min-width: 0;
   overflow: hidden;
@@ -1330,6 +1348,7 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   100% { transform: translateX(-100%); }
 }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 /* Khối phải — cụm nút + thanh tua, chiếm nhiều chỗ nhất */
 .pp-controls {
   flex: 2 1 260px;
@@ -1337,6 +1356,8 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   align-items: center;
   gap: 10px;
 =======
+=======
+>>>>>>> Stashed changes
 
 /* Cụm nút + thanh tua — màn hẹp thì TỰ XUỐNG DÒNG RIÊNG (full-width),
    màn đủ rộng (>=560px) thì lên chung hàng với avatar + tên. */
@@ -1438,5 +1459,8 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
     width: 100%;
     text-align: center;
   }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
