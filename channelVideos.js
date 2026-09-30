@@ -140,7 +140,12 @@ const channelVideosCache = createSwrCache({
   ttlMs: CACHE_TTL_MS,
   load: loadChannelLatestVideos,
   fallback: [],
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "channel-videos"
+>>>>>>> Stashed changes
 });
 
 /**

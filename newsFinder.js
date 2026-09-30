@@ -366,7 +366,27 @@ export async function getSuggestedPosts(sources) {
  * true/false — không cần thêm cơ chế giữ-bài-cũ riêng ở đây.
  */
 export async function getSuggestedPostsCached(sources) {
+<<<<<<< Updated upstream
   return getOrRefresh("bai-doc-de-xuat", () => getSuggestedPosts(sources));
+=======
+  return getOrRefresh("bai-doc-de-xuat", async () => {
+    const result = await getSuggestedPosts(sources);
+    const soThanhCong = result.filter((p) => p.found).length;
+    console.log(
+      `newsFinder: bai-doc-de-xuat -> sheet đưa ra ${sources.length} nguồn, dò được bài thật ở ${soThanhCong}/${result.length} nguồn`
+    );
+    return result;
+  }, {
+    // Mảng trả về LUÔN đủ số nguồn (mỗi nguồn 1 object found:true/false),
+    // không bao giờ rỗng theo ĐỘ DÀI — nên phải tự định nghĩa "rỗng" đúng
+    // với tiêu chí đang lọc hiển thị ở server.js/mosaicFeed.js
+    // (.filter(p => p.found)): không có nguồn nào found:true thì coi như
+    // rỗng. Thiếu điều kiện này, 1 lần dò lỗi hết các nguồn (site chậm,
+    // mất mạng tạm...) sẽ bị hiểu nhầm là "thành công", khoá nguyên khối
+    // trắng cho cả ngày — kể cả sau khi admin đã xoá cache thủ công.
+    isEmpty: (data) => !Array.isArray(data) || data.length === 0 || !data.some((p) => p.found)
+  });
+>>>>>>> Stashed changes
 }
 
 export function sortSuggestedPosts(posts) {

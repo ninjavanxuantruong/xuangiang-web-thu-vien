@@ -16,6 +16,10 @@ let cache = null;
 let cacheTime = 0;
 let refreshing = null; // lần làm mới đang chạy (nếu có) — để không chạy trùng nhau
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 const EMPTY_ZONES = { taiLieu: [], danhNhan: [], videoXa: [], tinXa: [], baiDeXuat: [], videoDeXuat: [], tinTheGioi: [] };
 
 function slugDocLink(name) {

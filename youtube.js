@@ -91,7 +91,12 @@ const latestVideosCache = createSwrCache({
   ttlMs: CACHE_TTL_MS,
   load: loadLatestVideos,
   fallback: [],
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "youtube-latest"
+>>>>>>> Stashed changes
 });
 
 /**

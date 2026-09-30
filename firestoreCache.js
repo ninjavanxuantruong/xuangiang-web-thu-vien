@@ -128,8 +128,17 @@ export async function getOrRefresh(key, fetchFn, options = {}) {
   // Firestore đang lỗi mà RAM còn bản cũ -> dùng tạm, đừng đi lấy lại từ đầu.
   if (readFailed && ram) return clone(ram.data);
 
+<<<<<<< Updated upstream
   // Đã có đúng bản của "ngày cache" hôm nay -> chỉ đọc, không gọi fetchFn.
   if (old && old.dayKey === todayKey) {
+=======
+  // Đã có đúng bản của "ngày cache" hôm nay VÀ bản đó không rỗng -> chỉ
+  // đọc, không gọi fetchFn. Nếu bản hôm nay bị rỗng/thiếu (ví dụ bị xoá
+  // tay trong Firebase, hoặc xoá qua khu quản lý nhưng dayKey chưa kịp
+  // đổi) -> coi như CHƯA CÓ, đi lấy mới ngay — đúng ý "khối nào trống thì
+  // người đầu tiên vào phải lấy lại khối đó".
+  if (old && old.dayKey === todayKey && !isEmpty(old.data)) {
+>>>>>>> Stashed changes
     remember(key, todayKey, old.data);
     return clone(old.data);
   }

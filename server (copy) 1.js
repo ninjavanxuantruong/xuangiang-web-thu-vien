@@ -373,16 +373,6 @@ app.get("/debug/channel-videos", async (req, res) => {
   res.json(debug);
 });
 
-<<<<<<< Updated upstream
-=======
-// Ngưỡng ghi log thời gian tải trang chủ (ms). Mặc định 1000: chỉ ghi khi trang chậm.
-const HOME_LOG_MS = (() => {
-  const raw = process.env.HOME_LOG_MS;
-  const n = Number(raw);
-  return raw !== undefined && raw !== "" && Number.isFinite(n) ? n : 1000;
-})();
-
->>>>>>> Stashed changes
 app.get("/", async (req, res) => {
   // Gửi khung sườn + splash NGAY, trước khi đụng tới bất kỳ dữ liệu nào,
   // để splash thật sự che màn hình trắng trong lúc chờ.
@@ -406,46 +396,21 @@ app.get("/", async (req, res) => {
     // chạy song song -> thời gian = khối CHẬM NHẤT. Mỗi khối phụ tự bắt lỗi
     // (lỗi thì trang vẫn lên, chỉ thiếu khối đó); lỗi ở dữ liệu lõi (danh sách
     // tài liệu) vẫn đi xuống catch bên dưới như cũ.
-<<<<<<< Updated upstream
     const settle = (fn, fallback, label) =>
-=======
-    // Đo xem mỗi khối xong sau bao lâu (tính từ lúc bắt đầu) để nếu trang chậm
-    // thì xem log trên Render biết ngay khối nào là thủ phạm.
-    const t0 = Date.now();
-    const marks = {};
-    const settle = (key, fn, fallback, label) =>
->>>>>>> Stashed changes
       Promise.resolve()
         .then(fn)
         .catch((err) => {
           console.error(label, err.message);
           return fallback;
-<<<<<<< Updated upstream
         });
 
     const coreP = Promise.all([getDocuments(), getDocumentTypes(), getSuggestedSources()]);
-=======
-        })
-        .then((value) => {
-          marks[key] = Date.now() - t0;
-          return value;
-        });
-
-    const coreP = Promise.all([getDocuments(), getDocumentTypes(), getSuggestedSources()]).then((v) => {
-      marks.tailieu = Date.now() - t0;
-      return v;
-    });
->>>>>>> Stashed changes
     coreP.catch(() => {}); // lỗi lõi sẽ được ném ra ở lệnh await Promise.all bên dưới
 
     // Không cắt bớt nữa — hiện đủ mọi nguồn đã cấu hình trong sheet, và nguồn
     // nào đã xác định được đúng bài viết (found: true) hiện lên trước. Nguồn
     // nào CHƯA xác định được bài viết cụ thể thì bỏ hẳn, không hiện.
     const suggestedP = settle(
-<<<<<<< Updated upstream
-=======
-      "baiDeXuat",
->>>>>>> Stashed changes
       () =>
         coreP
           .then(([, , sources]) => getSuggestedPostsCached(sources))
@@ -453,7 +418,6 @@ app.get("/", async (req, res) => {
       [],
       "Lấy bài đọc đề xuất lỗi:"
     );
-<<<<<<< Updated upstream
     const surveysP = settle(() => getSurveys(), [], "Lấy danh sách khảo sát lỗi:");
     const latestVideosP = settle(() => getLatestVideos(), [], "Lấy video Youtube lỗi:");
     const xaNewsP = settle(() => getXaNews(), [], "Lấy tin tức xã lỗi:");
@@ -461,27 +425,12 @@ app.get("/", async (req, res) => {
     // Không giới hạn số lượng — trang chủ hiện HẾT danh sách, chạy vòng tròn (marquee).
     const nhanVatP = settle(() => getNhanVatList(), [], "Lấy danh sách Danh nhân & Địa điểm lỗi:");
     const mosaicP = settle(
-=======
-    const surveysP = settle("khaoSat", () => getSurveys(), [], "Lấy danh sách khảo sát lỗi:");
-    const latestVideosP = settle("videoXa", () => getLatestVideos(), [], "Lấy video Youtube lỗi:");
-    const xaNewsP = settle("tinXa", () => getXaNews(), [], "Lấy tin tức xã lỗi:");
-    const channelVideosP = settle("videoKenh", () => getChannelLatestVideos(), [], "Lấy video theo danh sách kênh lỗi:");
-    // Không giới hạn số lượng — trang chủ hiện HẾT danh sách, chạy vòng tròn (marquee).
-    const nhanVatP = settle("danhNhan", () => getNhanVatList(), [], "Lấy danh sách Danh nhân & Địa điểm lỗi:");
-    const mosaicP = settle(
-      "mosaic",
->>>>>>> Stashed changes
       () => getMosaicZones(),
       { taiLieu: [], danhNhan: [], videoXa: [], tinXa: [], baiDeXuat: [], videoDeXuat: [], tinTheGioi: [] },
       "Lấy dữ liệu mosaic lỗi:"
     );
-<<<<<<< Updated upstream
     const worldNewsP = settle(() => getWorldNewsFast(), [], "Lấy tin thế giới lỗi:");
     const podcastP = settle(() => getLatestPodcast(), null, "Lấy podcast lỗi:");
-=======
-    const worldNewsP = settle("tinTheGioi", () => getWorldNewsFast(), [], "Lấy tin thế giới lỗi:");
-    const podcastP = settle("podcast", () => getLatestPodcast(), null, "Lấy podcast lỗi:");
->>>>>>> Stashed changes
 
     const [
       [docs, types],
@@ -490,7 +439,6 @@ app.get("/", async (req, res) => {
       latestVideos,
       xaNews,
       channelVideos,
-<<<<<<< Updated upstream
     nhanVatPreview,
     mosaicZones,
     worldNews,
@@ -508,61 +456,17 @@ app.get("/", async (req, res) => {
     podcastP
     ]);
 
-=======
-      nhanVatPreview,
-      mosaicZones,
-      worldNews,
-      podcast
-    ] = await Promise.all([
-      coreP,
-      suggestedP,
-      surveysP,
-      latestVideosP,
-      xaNewsP,
-      channelVideosP,
-      nhanVatP,
-      mosaicP,
-      worldNewsP,
-      podcastP
-    ]);
-
-    const loadMs = Date.now() - t0;
-
->>>>>>> Stashed changes
     // "Tài liệu nổi bật": lấy văn bản ĐẦU TIÊN của MỖI loại (vì bạn luôn
     // chèn văn bản mới lên đầu nhóm loại đó trong sheet — dòng đầu = mới nhất).
     const featuredDocs = types
       .map((type) => docs.find((d) => d.type === type))
       .filter(Boolean);
 
-<<<<<<< Updated upstream
   req.app.render(
     "home-content",
     { types, featuredDocs, suggestedPosts, latestVideos, xaNews, channelVideos, nhanVatPreview, mosaicZones, worldNews, surveys, podcast },
   (err, contentHtml) => {
     res.end(err ? "<p>Không tải được trang chủ</p></body></html>" : contentHtml);
-=======
-const renderStart = Date.now();
-req.app.render(
-  "home-content",
-  { types, featuredDocs, suggestedPosts, latestVideos, xaNews, channelVideos, nhanVatPreview, mosaicZones, worldNews, surveys, podcast },
-  (err, contentHtml) => {
-    res.end(err ? "<p>Không tải được trang chủ</p></body></html>" : contentHtml);
-
-    // Ghi log thời gian: mặc định chỉ khi trang chậm hơn HOME_LOG_MS (1000ms).
-    // Muốn xem MỌI lượt, đặt biến môi trường HOME_LOG_MS=0 trên Render.
-    const renderMs = Date.now() - renderStart;
-    if (loadMs + renderMs >= HOME_LOG_MS) {
-      console.log(
-        `[trang chủ] tổng ${loadMs + renderMs}ms = lấy dữ liệu ${loadMs}ms + dựng trang ${renderMs}ms` +
-        ` | mỗi khối xong sau (ms): ${JSON.stringify(marks)}` +
-        ` | ảnh trong RAM: ${imgCache.size} (${(imgCacheBytes / 1048576).toFixed(1)}MB)`
-      );
-    }
-
-    // Trang đã gửi xong -> lúc này mới tải sẵn ảnh vào RAM cho những người vào sau.
-    setImmediate(() => warmProxiedImages({ suggestedPosts, mosaicZones, xaNews, worldNews, nhanVatPreview }));
->>>>>>> Stashed changes
   }
 );
 } catch (err) {
@@ -651,7 +555,6 @@ app.get("/doc/:name", async (req, res) => {
     res.status(500).send("Không thể hiển thị tài liệu");
   }
 });
-<<<<<<< Updated upstream
 // ====== Tải về tài liệu gốc — dùng chung cho nút "Tải về" ở trang đọc
 // và ở danh mục. Google Docs -> chuyển hướng sang link xuất .docx; file
 // Drive -> dò Word/PDF rồi chuyển hướng đúng chỗ (PDF dùng /pdf/:id đã
@@ -686,8 +589,6 @@ app.get("/tai-ve/:name", async (req, res) => {
     res.status(500).send("Không tải được tài liệu");
   }
 });
-=======
->>>>>>> Stashed changes
 
 // ====== PDF (Drive) — lưu tạm ra đĩa (xem pdfCache.js) ======
 // Người đầu tiên mở 1 PDF: server tải từ Drive 1 lần rồi lưu lại; mọi người sau
@@ -713,11 +614,7 @@ app.get("/podcast/audio", (req, res) => {
 // kể cả khi trang nguồn đang có vấn đề ở đúng thời điểm đó.
 //
 // CHỐNG QUÁ TẢI / LẠM DỤNG (bản này):
-<<<<<<< Updated upstream
 //   - Giữ ảnh đã tải trong RAM (tối đa ~40MB, 6 giờ): 200 người xem cùng 1
-=======
-//   - Giữ ảnh đã tải trong RAM (tối đa ~80MB, 6 giờ): 200 người xem cùng 1
->>>>>>> Stashed changes
 //     ảnh chỉ tốn 1 lượt tải ra ngoài, các trang trả thẳng từ RAM.
 //   - Cùng 1 ảnh đang tải dở thì các yêu cầu sau chờ chung, không tải lại.
 //   - Tối đa IMG_MAX_CONCURRENT ảnh tải cùng lúc; hàng chờ đầy thì trả ảnh dự
@@ -727,7 +624,6 @@ app.get("/podcast/audio", (req, res) => {
 //   - Chặn địa chỉ nội bộ (localhost, 10.x, 192.168.x, 169.254.x...) và kiểm
 //     tra lại sau mỗi lần chuyển hướng — không ai dùng được server làm cổng
 //     vào mạng nội bộ.
-<<<<<<< Updated upstream
 const IMG_TIMEOUT_MS = 10 * 1000;
 const IMG_MAX_BYTES = 5 * 1024 * 1024;
 const IMG_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -737,21 +633,6 @@ const IMG_FAIL_TTL_MS = 60 * 1000;
 const IMG_MAX_REDIRECTS = 3;
 const IMG_MAX_CONCURRENT = 8;
 const IMG_MAX_QUEUE = 100;
-=======
-const IMG_TIMEOUT_MS = 8 * 1000;
-const IMG_MAX_BYTES = 5 * 1024 * 1024;
-const IMG_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const IMG_CACHE_MAX_BYTES = 80 * 1024 * 1024;
-const IMG_CACHE_MAX_ITEMS = 600;
-const IMG_FAIL_TTL_MS = 60 * 1000;
-const IMG_MAX_REDIRECTS = 3;
-// 1 lượt vào trang chủ kéo theo hàng chục ảnh qua proxy này (bài đề xuất, tin xã,
-// danh nhân, mosaic...). Giới hạn quá nhỏ (trước là 8) sẽ xếp hàng cả trang
-// chờ nhau -> trang chủ chậm hàng chục giây. 24 đủ để tải song song thoải mái
-// mà vẫn chặn được kiểu dội hàng trăm yêu cầu cùng lúc.
-const IMG_MAX_CONCURRENT = 24;
-const IMG_MAX_QUEUE = 400;
->>>>>>> Stashed changes
 
 const imgCache = new Map(); // href -> { buf, type, time }  (thứ tự chèn = cũ -> mới)
 let imgCacheBytes = 0;
@@ -913,18 +794,9 @@ async function getExternalImage(href) {
   const task = (async () => {
     const gotSlot = await acquireImgSlot();
     if (!gotSlot) return null; // quá tải: không ghi nhớ là "nguồn lỗi"
-<<<<<<< Updated upstream
     try {
       const img = await downloadImage(href);
       imgCacheSet(href, img);
-=======
-    const startedAt = Date.now();
-    try {
-      const img = await downloadImage(href);
-      imgCacheSet(href, img);
-      const took = Date.now() - startedAt;
-      if (took > 3000) console.log(`[ảnh] tải chậm ${took}ms (${(img.buf.length / 1024).toFixed(0)}KB): ${href}`);
->>>>>>> Stashed changes
       return img;
     } catch (err) {
       console.warn("Proxy ảnh ngoài lỗi:", href, "-", err.message);
@@ -943,72 +815,6 @@ async function getExternalImage(href) {
   return task;
 }
 
-<<<<<<< Updated upstream
-=======
-// ====== Làm nóng ảnh ở nền ======
-// Sau mỗi lượt dựng trang chủ (kể cả lượt ping giữ server thức), server tự tải
-// sẵn các ảnh đi qua /anh-ngoai vào RAM. Nhờ đó người xem thật vào là ảnh có
-// ngay, không phải chờ server đi lấy hàng chục ảnh từ các trang ngoài.
-let warmingImages = false;
-
-function collectProxiedImageUrls(value, out, depth = 0) {
-  if (out.size >= 250 || depth > 6 || value == null) return;
-  if (typeof value === "string") {
-    if (value.startsWith("/anh-ngoai?u=")) {
-      try {
-        const u = new URL(value, "http://localhost").searchParams.get("u");
-        if (u) out.add(new URL(u).href);
-      } catch {
-        /* bỏ qua địa chỉ hỏng */
-      }
-    }
-    return;
-  }
-  if (Array.isArray(value)) {
-    for (const v of value) collectProxiedImageUrls(v, out, depth + 1);
-    return;
-  }
-  if (typeof value === "object") {
-    for (const v of Object.values(value)) collectProxiedImageUrls(v, out, depth + 1);
-  }
-}
-
-async function warmProxiedImages(data) {
-  if (warmingImages) return;
-  warmingImages = true;
-  try {
-    const urls = new Set();
-    collectProxiedImageUrls(data, urls);
-    const pending = [...urls].filter((href) => !imgCache.has(href));
-    const startedAt = Date.now();
-    let okCount = 0;
-    let failCount = 0;
-    const BATCH = 4;
-    for (let i = 0; i < pending.length; ) {
-      if (Date.now() - startedAt > 90 * 1000) break; // không kéo dài quá 90 giây
-      // Nhường chỗ cho người xem thật: chỉ tải thêm khi proxy đang rảnh.
-      if (imgActive > 0 || imgQueue.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        continue;
-      }
-      const results = await Promise.all(pending.slice(i, i + BATCH).map((href) => getExternalImage(href).catch(() => null)));
-      results.forEach((r) => (r ? okCount++ : failCount++));
-      i += BATCH;
-    }
-    if (pending.length > 0) {
-      console.log(
-        `[ảnh] tải sẵn ${pending.length} ảnh mới trong ${Date.now() - startedAt}ms: được ${okCount}, lỗi/bỏ qua ${failCount}` +
-        ` (tổng ${urls.size} ảnh trong trang, đã có sẵn ${urls.size - pending.length})`
-      );
-    }
-  } catch (err) {
-    console.warn("warmProxiedImages lỗi:", err.message);
-  } finally {
-    warmingImages = false;
-  }
-}
-
->>>>>>> Stashed changes
 app.get("/anh-ngoai", async (req, res) => {
   const src = req.query.u;
   const name = String(req.query.name || "").slice(0, 200);
@@ -1425,49 +1231,4 @@ const server = app.listen(PORT, () => {
 // định chỉ giữ 5 giây nên thỉnh thoảng bị đóng đúng lúc có request mới đi tới
 // -> người dùng gặp lỗi 502 ngẫu nhiên. Nới ra cho lớn hơn.
 server.keepAliveTimeout = 65 * 1000;
-<<<<<<< Updated upstream
 server.headersTimeout = 66 * 1000;
-=======
-server.headersTimeout = 66 * 1000;
-
-// ====== Làm nóng dữ liệu NGAY KHI SERVER KHỞI ĐỘNG ======
-// Sau mỗi lần deploy/khởi động lại, mọi cache trong RAM đều trống nên người
-// vào đầu tiên phải chờ lấy toàn bộ dữ liệu (đo thực tế: ~7,5 giây). Thay vì
-// để người xem thật gánh, server tự làm việc đó ngay lúc khởi động (song song,
-// giống hệt các khối của trang chủ), rồi tải sẵn ảnh vào RAM.
-async function warmUpOnStart() {
-  const t0 = Date.now();
-  const quiet = (fn) =>
-    Promise.resolve()
-      .then(fn)
-      .catch((err) => {
-        console.warn("[khởi động] một bước làm nóng bị lỗi:", err.message);
-        return null;
-      });
-
-  const sources = (await quiet(() => getSuggestedSources())) || [];
-  const [posts, , , xaNews, , nhanVat, mosaic, worldNews] = await Promise.all([
-    quiet(() => getSuggestedPostsCached(sources)),
-    quiet(() => getSurveys()),
-    quiet(() => getLatestVideos()),
-    quiet(() => getXaNews()),
-    quiet(() => getChannelLatestVideos()),
-    quiet(() => getNhanVatList()),
-    quiet(() => getMosaicZones()),
-    quiet(() => getWorldNewsFast()),
-    quiet(() => getLatestPodcast())
-  ]);
-  console.log(`[khởi động] làm nóng dữ liệu xong sau ${Date.now() - t0}ms`);
-
-  await warmProxiedImages({
-    suggestedPosts: sortSuggestedPosts(posts || []).filter((p) => p.found),
-    xaNews,
-    nhanVatPreview: nhanVat,
-    mosaicZones: mosaic,
-    worldNews
-  });
-}
-setTimeout(() => {
-  warmUpOnStart().catch((err) => console.warn("[khởi động] làm nóng lỗi:", err.message));
-}, 1000);
->>>>>>> Stashed changes

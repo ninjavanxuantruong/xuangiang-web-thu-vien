@@ -36,12 +36,7 @@
   const FAST_CHAR_MS = 6; // tốc độ gõ khi cần đẩy nhanh cho xong
 
   const SUGGESTED_POLL_MS = 1500; // hỏi lại /api/bai-doc-de-xuat mỗi 1.5s
-<<<<<<< Updated upstream
   const SUGGESTED_MAX_WAIT_MS = 25000; // chờ tối đa 25s, tránh treo mãi
-=======
-  const SUGGESTED_MAX_WAIT_MS = 8000; // chờ tối đa 8s, tránh treo mãi (trước là 25s)
-  const LOAD_GRACE_MS = 4000; // trang về đủ rồi thì chờ ảnh tối đa 4s
->>>>>>> Stashed changes
 
   let charIndex = 0;
   let typingTimer = null;
@@ -87,12 +82,7 @@
     setTimeout(() => overlay.remove(), 700); // khớp thời gian CSS ẩn dần
   }
 
-<<<<<<< Updated upstream
   window.addEventListener("load", () => {
-=======
-  function markLoaded() {
-    if (windowLoaded) return;
->>>>>>> Stashed changes
     windowLoaded = true;
     if (typingDone) {
       maybeHide();
@@ -100,19 +90,7 @@
       // Trang đã load xong nhưng chữ chưa gõ hết -> đẩy nhanh phần còn lại
       speedUp = true;
     }
-<<<<<<< Updated upstream
   });
-=======
-  }
-
-  window.addEventListener("load", markLoaded);
-
-  // DOMContentLoaded chỉ đến khi server đã gửi XONG toàn bộ trang. Từ lúc đó,
-  // ảnh nào chưa tải kịp trong LOAD_GRACE_MS thì thôi không chờ nữa (coi như
-  // đã load xong) để màn chờ không kéo dài chỉ vì 1-2 ảnh chậm.
-  document.addEventListener("DOMContentLoaded", () => setTimeout(markLoaded, LOAD_GRACE_MS));
-  if (document.readyState === "complete") markLoaded();
->>>>>>> Stashed changes
 
   // ----- Chờ "bài đọc đề xuất" xác định xong hết các nguồn -----
   const suggestedWaitStart = Date.now();

@@ -152,7 +152,12 @@ const xaNewsCache = createSwrCache({
   ttlMs: CACHE_TTL_MS,
   load: loadXaNews,
   fallback: [],
+<<<<<<< Updated upstream
   isEmpty: (v) => !v || v.length === 0
+=======
+  isEmpty: (v) => !v || v.length === 0,
+  persistKey: "xa-news"
+>>>>>>> Stashed changes
 });
 
 /**

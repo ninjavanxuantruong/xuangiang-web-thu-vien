@@ -128,6 +128,15 @@ function convertDriveLink(link) {
  * faceLink / NguonTrang là link + tên nguồn tin bên ngoài dùng cho phần
  * "Bài đọc đề xuất" (newsFinder.js sẽ đọc 2 cột này), KHÔNG cần sheet mới.
  */
+<<<<<<< Updated upstream
+=======
+/**
+ * Lấy toàn bộ danh sách tài liệu từ Google Sheet (PDF_SHEET_URL trong .env).
+ * Cột đang dùng: type | name | url | summaryD | summaryE | summaryF
+ * (Cột faceLink/NguonTrang cho "Bài đọc đề xuất" đã tách sang sheet riêng —
+ * xem getSuggestedSources(), SUGGESTED_SHEET_URL trong .env.)
+ */
+>>>>>>> Stashed changes
 export async function getDocuments() {
   const url = process.env.PDF_SHEET_URL;
   const records = await fetchSheet(url);
@@ -144,6 +153,7 @@ export async function getDocuments() {
         url: link,
         summaryD: r.summaryD || r.D || r.tomtat1 || "",
         summaryE: r.summaryE || r.E || r.tomtat2 || "",
+<<<<<<< Updated upstream
         summaryF: r.summaryF || r.F || r.tomtat3 || "",
         // Cột dùng cho phần "Bài đọc đề xuất" (newsFinder.js)
         sourceLink: r.faceLink || r.G || "",
@@ -151,12 +161,19 @@ export async function getDocuments() {
       };
     })
     .filter((item) => item.url || item.sourceLink);
+=======
+        summaryF: r.summaryF || r.F || r.tomtat3 || ""
+      };
+    })
+    .filter((item) => item.url);
+>>>>>>> Stashed changes
 }
 
 /**
  * Danh sách nguồn tin bên ngoài duy nhất (bỏ trùng link) để đưa cho
  * newsFinder.js đi tìm bài mới nhất + ảnh của từng nguồn.
  */
+<<<<<<< Updated upstream
 export async function getSuggestedSources() {
   const docs = await getDocuments();
   const seen = new Set();
@@ -170,11 +187,38 @@ export async function getSuggestedSources() {
       link: doc.sourceLink,
       name: doc.sourceName || doc.sourceLink
     });
+=======
+/**
+ * Danh sách nguồn tin cho "Bài đọc đề xuất" — đọc từ 1 Google Sheet RIÊNG
+ * (SUGGESTED_SHEET_URL trong .env), tách hẳn khỏi sheet tài liệu chính.
+ * Chỉ cần 2 cột: name (tên nguồn) | link (link nguồn).
+ * Chưa cấu hình SUGGESTED_SHEET_URL -> trả về mảng rỗng, để server.js tự
+ * ẩn hẳn khối "Bài đọc đề xuất" khi không có nguồn nào.
+ */
+export async function getSuggestedSources() {
+  const url = process.env.SUGGESTED_SHEET_URL;
+  if (!url) return [];
+
+  const records = await fetchSheet(url);
+  const seen = new Set();
+  const sources = [];
+
+  for (const r of records) {
+    const link = r.link || r.Link || r.url || r.URL || "";
+    const name = r.name || r.Name || r.ten || r.Ten || "";
+    if (!link) continue;
+    if (seen.has(link)) continue;
+    seen.add(link);
+    sources.push({ link, name: name || link });
+>>>>>>> Stashed changes
   }
 
   return sources;
 }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 /**
  * Danh sách loại tài liệu (dùng cho khối "Danh mục tài liệu" ở trang chủ).
  */

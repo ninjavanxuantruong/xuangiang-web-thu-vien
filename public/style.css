@@ -906,6 +906,7 @@ img {
 
 @media (max-width: 720px) {
   .mosaic-grid {
+<<<<<<< Updated upstream
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(3, 70px) 60px 60px repeat(2, 55px);
     grid-template-areas:
@@ -916,6 +917,12 @@ img {
       "f f f f"
       "d d e e"
       "g g g g";
+=======
+    /* Chỉ rút ngắn chiều cao mỗi hàng cho vừa màn hình nhỏ — KHÔNG đổi
+       grid-template-columns/areas, để giữ ĐÚNG bố cục a-b-c-f-d-e-g như
+       PC (12 cột dùng đơn vị fr đã tự co giãn theo màn hình rồi). */
+    grid-template-rows: repeat(6, 62px);
+>>>>>>> Stashed changes
   }
 }
 
@@ -1270,10 +1277,18 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+<<<<<<< Updated upstream
   padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
+=======
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;          /* xuống dòng khi không đủ chỗ -> không tràn ra ngoài nữa */
+  align-items: center;
+  gap: 10px 14px;
+>>>>>>> Stashed changes
 }
 .pp-cover {
   flex: 0 0 auto;
@@ -1286,9 +1301,16 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   justify-content: center;
   font-size: 22px;
 }
+<<<<<<< Updated upstream
 /* Khối giữa — tên podcast, chạy chữ phải sang trái nếu dài hơn khung */
 .pp-title-wrap {
   flex: 1 1 120px;
+=======
+
+/* Khối tên podcast — chạy chữ phải sang trái nếu dài hơn khung */
+.pp-title-wrap {
+  flex: 1 1 160px;
+>>>>>>> Stashed changes
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -1307,10 +1329,114 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
+<<<<<<< Updated upstream
 /* Khối phải — cụm nút + thanh tua, chiếm nhiều chỗ nhất */
 .pp-controls {
   flex: 2 1 260px;
   display: flex;
   align-items: center;
   gap: 10px;
+=======
+
+/* Cụm nút + thanh tua — màn hẹp thì TỰ XUỐNG DÒNG RIÊNG (full-width),
+   màn đủ rộng (>=560px) thì lên chung hàng với avatar + tên. */
+.pp-controls {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .pp-controls { flex: 2 1 300px; }
+}
+
+.pp-btn {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.pp-btn:hover { filter: brightness(0.94); }
+.pp-btn--main {
+  width: 42px;
+  height: 42px;
+  background: var(--color-brand);
+  color: #fff;
+  font-size: 16px;
+}
+
+.pp-progress {
+  flex: 1 1 auto;
+  min-width: 0;              /* bắt buộc để thanh trượt co lại được, không đẩy tràn layout */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pp-time {
+  flex: 0 0 auto;
+  width: 34px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pp-seek {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--color-brand);  /* tô màu thanh trượt theo màu thương hiệu, không cần CSS phức tạp */
+  height: 4px;
+  cursor: pointer;
+}
+
+.footer-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.footer-text {
+  line-height: 1.6;
+}
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.footer-social:hover {
+  transform: scale(1.08);
+  filter: brightness(1.1);
+}
+.footer-social.fb {
+  background: #1877f2;
+  color: #fff;
+}
+.footer-social.yt {
+  background: #ff0000;
+  color: #fff;
+}
+
+/* Điện thoại hẹp: icon xuống sát 2 bên, chữ tự xuống dòng ở giữa cho khỏi vỡ */
+@media (max-width: 480px) {
+  .footer-main {
+    flex-wrap: wrap;
+  }
+  .footer-text {
+    order: 3;
+    width: 100%;
+    text-align: center;
+  }
+>>>>>>> Stashed changes
 }
