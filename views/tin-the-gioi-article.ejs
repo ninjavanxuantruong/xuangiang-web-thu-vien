@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= article.title %> — <%= article.sourceName %></title>
+  <style>
+    :root {
+      --wn-bg: #f4f1ea;
+      --wn-paper: #ffffff;
+      --wn-text: #1c1c1c;
+      --wn-muted: #6b6558;
+      --wn-line: #ddd6c7;
+      --wn-accent: #7a1f1f;
+    }
+    html[data-theme="dark"] {
+      --wn-bg: #1a1816;
+      --wn-paper: #24211d;
+      --wn-text: #eae5da;
+      --wn-muted: #a89f8e;
+      --wn-line: #3a352c;
+      --wn-accent: #d97a7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wn-bg);
+      color: var(--wn-text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.7;
+    }
+    .wn-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      background: var(--wn-paper);
+      border-bottom: 1px solid var(--wn-line);
+    }
+    .wn-topbar a { color: var(--wn-muted); text-decoration: none; }
+    .wn-topbar button {
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      border: 1px solid var(--wn-line);
+      background: transparent;
+      color: var(--wn-text);
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .wn-wrap {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+    .wn-warning {
+      background: #fdeaea;
+      border: 1px solid #e3b3b3;
+      color: #7a1f1f;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: Arial, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    html[data-theme="dark"] .wn-warning {
+      background: #3a1f1f;
+      border-color: #5a2c2c;
+      color: #f0b3b3;
+    }
+    .wn-warning strong { display: block; margin-bottom: 4px; }
+    .wn-source-tag {
+      font-family: Arial, sans-serif;
+      font-size: 12.5px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--wn-accent);
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .wn-title {
+      font-size: 1.9em;
+      margin: 0 0 14px;
+      line-height: 1.3;
+    }
+    .wn-meta {
+      font-family: Arial, sans-serif;
+      font-size: 12.5px;
+      color: var(--wn-muted);
+      margin-bottom: 24px;
+    }
+    .wn-summary {
+      font-size: 1.08em;
+      white-space: pre-line;
+    }
+    .wn-citation {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--wn-line);
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: var(--wn-muted);
+    }
+    .wn-citation a {
+      color: var(--wn-accent);
+      word-break: break-word;
+    }
+    .wn-citation dl { margin: 0; }
+    .wn-citation dt { font-weight: bold; color: var(--wn-text); }
+    .wn-citation dd { margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="wn-topbar">
+    <a href="/">← Trang chủ</a>
+    <button data-toggle-theme onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')">🌓 Sáng / Tối</button>
+  </div>
+
+  <div class="wn-wrap">
+    <div class="wn-warning">
+      <strong>Lưu ý</strong>
+      Nội dung bên dưới là bản dịch và tóm tắt do AI thực hiện từ bài báo nước ngoài, giữ nguyên góc nhìn của báo/tác giả gốc. Độc giả nên cân nhắc và đối chiếu thêm khi tiếp nhận thông tin.
+    </div>
+
+    <div class="wn-source-tag"><%= article.sourceName %></div>
+    <h1 class="wn-title"><%= article.title %></h1>
+    <% if (article.image) { %>
+      <img
+        src="<%= article.image %>"
+        alt="<%= article.title %>"
+        style="width:100%;max-height:360px;object-fit:cover;border-radius:10px;margin-bottom:20px;"
+      />
+    <% } %>
+    <div class="wn-meta">
+      <% if (article.dateMs) { %>
+        <%= new Date(article.dateMs).toLocaleDateString("vi-VN") %>
+      <% } %>
+    </div>
+
+    <div class="wn-summary"><%= article.summaryVi %></div>
+
+    <div class="wn-citation">
+      <dl>
+        <dt>Nguồn</dt>
+        <dd><%= article.sourceName %></dd>
+        <% if (article.author) { %>
+          <dt>Tác giả</dt>
+          <dd><%= article.author %></dd>
+        <% } %>
+        <dt>Bài gốc</dt>
+        <dd><a href="<%= article.link %>" target="_blank" rel="noopener"><%= article.link %></a></dd>
+      </dl>
+    </div>
+  </div>
+
+</body>
+</html>
