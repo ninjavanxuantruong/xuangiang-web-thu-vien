@@ -29,7 +29,7 @@
     box.appendChild(
       el("div", {
         class: "xd-desc",
-        text: "Vui lòng cho biết họ tên và chi bộ của bạn"
+        text: "Vui lòng cho biết họ tên và chi bộ của bạn (chỉ làm một lần duy nhất, lần sau không cần)"
       })
     );
 
