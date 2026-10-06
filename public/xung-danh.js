@@ -92,6 +92,7 @@
         if (!res.ok) throw new Error("server từ chối");
 
         overlay.remove();
+        window.__XUNG_DANH_CAN_HOI__ = false;
         updateHeaderButton(name);
       } catch (err) {
         showError("Có lỗi khi lưu, vui lòng thử lại.");
@@ -130,7 +131,11 @@
 
   function init() {
     const btn = document.getElementById("xungDanhBtn");
-    if (btn) btn.addEventListener("click", openPopup);
+    if (btn) btn.addEventListener("click", function () {
+      // Đã xưng danh -> vào khu vực của tôi; chưa thì mở popup
+      if (window.__XUNG_DANH_CAN_HOI__ === false) window.location.href = "/toi";
+      else openPopup();
+    });
 
     if (window.__XUNG_DANH_CAN_HOI__ && !skippedThisSession()) openPopup();
   }
