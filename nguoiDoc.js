@@ -367,3 +367,25 @@ export async function deleteReader({ chiBoId, name }) {
   }
   return { rid, xoaLuot };
 }
+
+/**
+ * Các văn bản MỘT người đã đọc (trang "Khu vực của tôi" - /toi).
+ * Gộp theo tên văn bản: số lần được tính + ngày đọc gần nhất. Mới đọc xếp trên.
+ */
+export async function getMyReads(identity) {
+  const snap = await firestore
+    .collection("doc_reads")
+    .where("chiBoId", "==", identity.chiBoId)
+    .where("name", "==", identity.name)
+    .get();
+
+  const byDoc = new Map();
+  for (const d of snap.docs) {
+    const r = d.data();
+    const cur = byDoc.get(r.docName) || { docName: r.docName, soLan: 0, lanCuoi: "" };
+    cur.soLan += 1;
+    if ((r.createdAt || "") > cur.lanCuoi) cur.lanCuoi = r.createdAt || "";
+    byDoc.set(r.docName, cur);
+  }
+  return [...byDoc.values()].sort((a, b) => b.lanCuoi.localeCompare(a.lanCuoi));
+}
