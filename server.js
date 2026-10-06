@@ -36,7 +36,7 @@ import { getLatestPodcast, getCachedPodcastPath, getPodcastTrackFile } from "./p
 import { getRadioLatest, serveLiveHls } from "./radio.js";
 import {
   getChiBoList, getChiBoListCached, getIdentity, setIdentity, registerReader,
-  recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader
+  recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader, getMyReads
 } from "./nguoiDoc.js";
 
 // ====== Chống chết tiến trình vì 1 lỗi lẻ ======
@@ -1164,7 +1164,14 @@ app.get("/quanly/gop-y/xuat", requireAdmin, async (req, res) => {
     res.status(500).send("Không xoá được góp ý");
   }
 });
-
+// ====== Khu vực của tôi: tên + chi bộ đã đăng ký + các văn bản đã đọc ======
+app.get("/toi", async (req, res) => {
+  const me = getIdentity(req);
+  if (!me) return res.redirect("/");
+  let reads = [];
+  try { reads = await getMyReads(me); } catch (e) { console.warn("GET /toi lỗi:", e.message); }
+  res.render("toi", { me, reads });
+});
 app.get("/api/chi-bo", async (req, res) => {
   try { res.json(await getChiBoListCached()); } catch { res.json([]); }
 });
