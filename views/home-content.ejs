@@ -1,0 +1,441 @@
+
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">ĐẢNG BỘ XÃ XUÂN GIANG</div>
+      <div class="subtitle">Tài liệu • Tin tức • Nghiên cứu</div>
+    </div>
+    <div class="spacer"></div>
+
+    <button class="account-btn" id="xungDanhBtn"><%= daXungDanh ? "👤 " + tenXungDanh : "👤 Giới thiệu" %></button>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+  <!-- ====== Banner Góp ý — nổi bật, đặt ngay đầu trang ====== -->
+  <div class="section" style="background:#fff6e0;border-top:1px solid #f0dca0;border-bottom:1px solid #f0dca0;padding:16px 20px;">
+    <a href="/gop-y" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;">
+      <div style="width:40px;height:40px;border-radius:50%;background:#c46a1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💬</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;color:#8a4a10;">Góp ý xây dựng Đảng bộ, chính quyền</div>
+        <div style="font-size:12px;color:#8a4a10;opacity:0.85;">Chỉ mất vài giây</div>
+      </div>
+      <div style="background:#c46a1f;color:#fff;font-size:12px;padding:8px 16px;border-radius:16px;flex-shrink:0;">Gửi góp ý →</div>
+    </a>
+
+    <% if (typeof surveys !== "undefined" && surveys && surveys.length > 0) { %>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0dca0;display:flex;flex-direction:column;gap:6px;">
+        <% surveys.forEach(function(s) { %>
+          <a href="<%= s.link %>" target="_blank" rel="noopener"
+             style="display:block;font-size:13px;color:#8a4a10;text-decoration:none;background:#fffaf0;border:1px solid #f0dca0;border-radius:8px;padding:8px 12px;">
+            📋 <%= s.name %>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+<!-- ====== Lịch hôm nay — dải chữ chạy (public/lich-tuan.js) ====== -->
+<div class="lich-ticker-wrap" id="lichTickerWrap" hidden>
+  <div class="lich-ticker">
+    <span class="lt-label">📅 LỊCH HÔM NAY</span>
+    <div class="lt-viewport" id="ltViewport"><div class="lt-track" id="ltTrack"></div></div>
+  </div>
+</div>
+
+<!-- ====== Mosaic tổng quan — khung 7 ô kích thước CỐ ĐỊNH (a-g), nội
+     dung bên trong mỗi ô được random và tự đổi chỗ cho nhau theo thời
+     gian (xem public/mosaic-hero.js), khung hình không đổi. ====== -->
+<div class="mosaic-wrap">
+  <div class="mosaic-grid">
+    <div class="mosaic-zone mosaic-zone--a" data-mosaic-position="a"></div>
+    <div class="mosaic-zone mosaic-zone--b" data-mosaic-position="b"></div>
+    <div class="mosaic-zone mosaic-zone--c" data-mosaic-position="c"></div>
+    <div class="mosaic-zone mosaic-zone--d" data-mosaic-position="d"></div>
+    <div class="mosaic-zone mosaic-zone--e" data-mosaic-position="e"></div>
+    <div class="mosaic-zone mosaic-zone--f" data-mosaic-position="f"></div>
+    <div class="mosaic-zone mosaic-zone--g" data-mosaic-position="g"></div>
+  </div>
+  <div class="mosaic-watermark"><span>XUÂN GIANG</span></div>
+</div>
+<script type="application/json" id="mosaicData"><%- JSON.stringify(mosaicZones) %></script>
+
+
+
+  <!-- ====== Danh mục tài liệu — hiện HẾT, tự xuống dòng (CSS pill-row đã đổi) ====== -->
+  <div class="section">
+    <div class="section-title">Danh mục tài liệu</div>
+    <div class="pill-row">
+      <% types.forEach(function(type) { %>
+        <a class="pill" href="/loai/<%= encodeURIComponent(type) %>"><%= type %></a>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- ====== Tài liệu nổi bật: chạy marquee liên tục NGƯỢC CHIỀU so với
+       khối Danh nhân bên dưới, thay vì hiện tĩnh toàn bộ như trước ====== -->
+  <% if (featuredDocs && featuredDocs.length > 0) { %>
+    <div class="section section-featured">
+      <div class="section-title">Tài liệu nổi bật theo từng danh mục</div>
+      <div class="fd-marquee">
+        <div class="fd-track" style="animation-duration: <%= Math.max(featuredDocs.length * 3, 10) %>s;">
+          <% [...featuredDocs, ...featuredDocs].forEach(function(doc) { %>
+            <a class="card" href="/doc/<%= encodeURIComponent(doc.name) %>">
+              <div class="card-thumb" data-doc-cover="<%= doc.name %>"></div>
+              <div class="card-title"><%= doc.name %></div>
+              <div class="card-tag"><%= doc.type %></div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Danh nhân & Địa điểm (khối riêng, tách khỏi Danh mục tài liệu) ====== -->
+  <% if (nhanVatPreview && nhanVatPreview.length > 0) { %>
+    <div class="section" style="background:#f6f1e6;border-top:1px solid #e7dcc2;border-bottom:1px solid #e7dcc2;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-title" style="margin:0;">Danh nhân & Địa điểm</div>
+        <a href="/nguoi-va-dat" style="font-size:12.5px;font-weight:600;color:#8a4a10;text-decoration:none;white-space:nowrap;">Xem tất cả →</a>
+      </div>
+      <div class="dn-marquee">
+        <div class="dn-track" style="animation-duration: <%= Math.max(nhanVatPreview.length * 3, 10) %>s;">
+          <% [...nhanVatPreview, ...nhanVatPreview].forEach(function(item) { %>
+            <a class="card" href="/nguoi-va-dat/<%= encodeURIComponent(item.name) %>">
+              <div class="card-thumb">
+                <% if (item.images && item.images.length > 0) { %>
+                  <img src="<%= item.images[0] %>" alt="<%= item.name %>" loading="lazy" />
+                <% } else { %>
+                  🏛️
+                <% } %>
+              </div>
+              <div class="card-title"><%= item.name %></div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Video mới nhất (nền tối) — carousel xoay vòng, video giữa tự phát ====== -->
+  <% if (latestVideos && latestVideos.length > 0) { %>
+    <div class="section section-video">
+      <div class="section-title">Video mới nhất</div>
+
+      <div class="video-carousel-wrap" id="videoCarousel"></div>
+      <div class="vc-progress"><div class="vc-progress-bar" id="vcProgressBar"></div></div>
+
+      <div style="text-align:center;margin-top:16px;">
+        <a class="btn-pill" href="https://www.youtube.com/@XU%C3%82NGIANGNG%C3%80YM%E1%BB%9AI" target="_blank" rel="noopener">
+          Xem thêm trên Youtube
+        </a>
+      </div>
+    </div>
+
+    <script>
+      // dữ liệu cho carousel — mỗi phần tử có videoId, title, thumbnail (xem youtube.js)
+      window.VIDEOS = <%- JSON.stringify(latestVideos) %>;
+    </script>
+    <script src="/public/video-carousel.js"></script>
+  <% } %>
+
+  <!-- ====== Tin tức nổi bật của xã (nền tối) — 1 tin nổi bật lớn + danh sách ====== -->
+  <% if (xaNews && xaNews.length > 0) { %>
+    <div class="section section-video">
+      <div class="section-title">Tin tức nổi bật của xã</div>
+
+      <div class="xn-wrap">
+        <a class="xn-featured" id="xnFeaturedLink" href="<%= xaNews[0].link %>" target="_blank" rel="noopener">
+          <div class="xn-featured-imgs" id="xnFeaturedImgs">
+            <% (xaNews[0].images && xaNews[0].images.length ? xaNews[0].images : [xaNews[0].image]).forEach(function(src, i) { %>
+              <img src="<%= src %>" alt="<%= xaNews[0].title %>" loading="<%= i === 0 ? 'eager' : 'lazy' %>" class="<%= i === 0 ? 'is-active' : '' %>" />
+            <% }) %>
+          </div>
+          <div class="xn-overlay">
+            <p class="xn-title" id="xnFeaturedTitle"><%= xaNews[0].title %></p>
+            <div class="xn-date" id="xnFeaturedDate" style="<%= xaNews[0].date ? '' : 'display:none' %>"><%= xaNews[0].date || '' %></div>
+          </div>
+        </a>
+
+        <div class="xn-list">
+          <% xaNews.slice(1, 6).forEach(function(item) { %>
+            <a class="xn-item" href="<%= item.link %>" target="_blank" rel="noopener">
+              <div class="xn-thumb"><img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy" /></div>
+              <div class="xn-body">
+                <p class="xn-title"><%= item.title %></p>
+                <% if (item.date) { %><div class="xn-date"><%= item.date %></div><% } %>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Tối đa 5 bài gần nhất — script luân phiên lấy từng bài lên làm
+      // "bài chính" (chạy hết ảnh, tối thiểu 10s/bài) rồi đổi bài khác.
+      window.XN_FEATURED_NEWS = <%- JSON.stringify(xaNews.slice(0, 5)) %>;
+    </script>
+    <script src="/public/news-featured-slideshow.js"></script>
+  <% } %>
+
+  <!-- ====== Bài đọc đề xuất — carousel ảnh lớn, vuốt được (xem
+       initHeroCarousel trong main.js) ====== -->
+  <% if (suggestedPosts && suggestedPosts.length > 0) { %>
+    <div class="section">
+      <div class="section-title">Bài đọc đề xuất</div>
+      <div class="hero-banner" data-hero-carousel data-swipe id="heroBanner">
+        <% suggestedPosts.slice(0, 6).forEach(function(post, i) { %>
+          <a href="<%= post.link %>" target="_blank" rel="noopener" data-slide style="<%= i === 0 ? '' : 'display:none' %>">
+            <img src="<%= post.image %>" alt="<%= post.title %>" />
+            <div class="overlay">
+              <span class="badge"><%= post.name %></span>
+              <div class="headline"><%= post.title %></div>
+            </div>
+          </a>
+        <% }) %>
+        <div class="hero-dots">
+          <% suggestedPosts.slice(0, 6).forEach(function(post, i) { %>
+            <span data-dot class="<%= i === 0 ? 'active' : '' %>"></span>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ====== Video mới nhất theo từng kênh (nền sáng, mỗi thẻ 1 kênh) —
+       giờ hiện 2 video/lần, tự quay vòng NGƯỢC CHIỀU so với khối
+       "Bài đọc đề xuất" ở trên để tạo đa dạng ====== -->
+  <% if (channelVideos && channelVideos.length > 0) { %>
+    <div class="section">
+      <div class="section-title">Video mới nhất từ các kênh</div>
+        <div
+          class="cv-row"
+          data-rotator
+          data-rotator-count="2"
+          data-rotator-count-desktop="4"
+          data-rotator-interval="4500"
+          data-rotator-reverse="true"
+        >
+        <% channelVideos.forEach(function(v) { %>
+          <a class="cv-card" href="<%= v.link %>" target="_blank" rel="noopener">
+            <div class="cv-thumb">
+              <img src="<%= v.thumbnail %>" alt="<%= v.title %>" loading="lazy" />
+              <div class="cv-channel-badge"><%= v.channelName %></div>
+              <div class="cv-play">▶</div>
+            </div>
+            <div class="cv-body">
+              <p class="cv-title"><%= v.title %></p>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+<% if (worldNews && worldNews.length > 0) { %>
+  <div class="section">
+    <div class="section-title">Điểm báo quốc tế</div>
+    <div
+      class="wn-spotlight"
+      data-wn-spotlight
+      data-wn-mobile-count="2"
+      data-wn-desktop-count="4"
+      data-wn-desktop-breakpoint="720"
+      data-wn-spotlight-interval="2800"
+    >
+      <% worldNews.forEach(function(item) { %>
+        <a class="wn-item" href="/tin-the-gioi/<%= item.id %>">
+          <div class="wn-thumb">
+            <img class="wn-img" loading="lazy" alt="<%= item.title %>"
+               src="<%= item.image %>" />
+            <div class="wn-marquee" data-title="<%= item.title %>">
+              <span class="wn-type-text"></span><span class="wn-type-cursor"></span>
+            </div>
+          </div>
+          <div class="wn-body">
+            <div class="wn-title"><%= item.title %></div>
+            <div class="wn-meta"><%= item.sourceName %> · bản dịch AI</div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+
+<!-- ====== Podcast — mọi file âm thanh trong folder Drive (podcast.js) ====== -->
+<% if (podcast && podcast.tracks && podcast.tracks.length) { %>
+  <div class="section">
+    <div class="section-title">Podcast</div>
+    <div class="podcast-player" id="podcastPlayer" data-src="<%= podcast.tracks[0].src %>">
+      <div class="pp-cover">🎙️</div>
+
+      <div class="pp-title-wrap">
+        <span class="pp-title" id="ppTitle"><%= podcast.tracks[0].title %></span>
+      </div>
+
+      <div class="pp-controls">
+        <% if (podcast.tracks.length > 1) { %>
+          <button type="button" class="pp-btn" id="ppPrev" title="Bài trước" aria-label="Bài trước">⏮</button>
+        <% } %>
+        <button type="button" class="pp-btn" id="ppBack15" title="Lùi 15 giây" aria-label="Lùi 15 giây">⏪</button>
+        <button type="button" class="pp-btn pp-btn--main" id="ppPlayPause" title="Phát / Tạm dừng" aria-label="Phát">▶</button>
+        <button type="button" class="pp-btn" id="ppFwd15" title="Tiến 15 giây" aria-label="Tiến 15 giây">⏩</button>
+        <% if (podcast.tracks.length > 1) { %>
+          <button type="button" class="pp-btn" id="ppNext" title="Bài sau" aria-label="Bài sau">⏭</button>
+        <% } %>
+        <div class="pp-progress">
+          <span class="pp-time" id="ppCurrent">0:00</span>
+          <input type="range" class="pp-seek" id="ppSeek" min="0" max="100" value="0" />
+          <span class="pp-time" id="ppDuration">0:00</span>
+        </div>
+      </div>
+
+      <div class="pp-status" id="ppStatus" role="status" aria-live="polite"></div>
+
+      <% if (podcast.tracks.length > 1) { %>
+        <ul class="pp-playlist" id="ppPlaylist">
+          <% podcast.tracks.forEach((t, i) => { %>
+            <li class="pp-item" data-src="<%= t.src %>" data-title="<%= t.title %>">
+              <button type="button" class="pp-item-btn">
+                <span class="pp-item-no"><%= i + 1 %></span>
+                <span class="pp-item-title"><%= t.title %></span>
+                <% if (t.sizeMB) { %><span class="pp-item-size"><%= t.sizeMB %> MB</span><% } %>
+              </button>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <audio id="ppAudio" preload="none"></audio>
+    </div>
+  </div>
+<% } %>
+
+<!-- ====== Phát thanh đề xuất — TRỰC TIẾP + bản tin mới nhất từ các đài khác (radio.js) ====== -->
+<% if (typeof radio !== "undefined" && radio && (radio.live || (radio.channels && radio.channels.length))) { %>
+  <div class="section" id="radioBlock">
+    <div class="section-title">Phát thanh đề xuất</div>
+    <style>
+      .radio-ch { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 12px 16px; margin-bottom: 12px; }
+      .radio-ch-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+      .radio-ch-name { font-weight: 700; font-size: 14px; color: var(--text-primary); }
+      .radio-ch-org { font-size: 12px; color: var(--text-muted); }
+      .radio-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--border-color); }
+      .radio-ch-head + .radio-item, .radio-ch-head + .radio-items > .radio-item:first-child { border-top: none; }
+      .radio-thumb { flex: 0 0 64px; width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--color-brand); }
+      .radio-body { flex: 1 1 auto; min-width: 0; }
+      .radio-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0 0 2px; }
+      .radio-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+      .radio-body audio { width: 100%; height: 36px; }
+      .radio-src { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--color-brand); text-decoration: none; }
+      .radio-src.is-hint { font-weight: 700; text-decoration: underline; }
+      .radio-err { font-size: 12px; color: #b3261e; margin: 4px 0 0; }
+      .radio-more[hidden] { display: none; }
+      .radio-more-btn { display: block; width: 100%; margin-top: 6px; padding: 8px; border: 1px dashed var(--border-color); border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+      .radio-more-btn:hover { background: var(--bg-surface-2); }
+      /* Trực tiếp */
+      .radio-live { display: flex; gap: 12px; align-items: center; }
+      .radio-live-btn { flex: 0 0 48px; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--color-brand); color: #fff; font-size: 20px; cursor: pointer; }
+      .radio-live-btn.is-on { background: #c62828; }
+      .radio-live-body { flex: 1 1 auto; min-width: 0; }
+      .radio-badge { display: inline-block; background: #c62828; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 1px 7px; border-radius: 10px; margin-right: 6px; vertical-align: 1px; }
+      .radio-live-now { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+      .radio-live-next { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+      .radio-live-status { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+      .radio-live-status:empty { display: none; }
+    </style>
+
+    <% if (radio.live) { %>
+      <div class="radio-ch">
+        <div class="radio-live" id="radioLive" data-src="<%= radio.live.src %>">
+          <button type="button" class="radio-live-btn" id="radioLiveBtn" aria-label="Nghe trực tiếp" title="Nghe trực tiếp">▶</button>
+          <div class="radio-live-body">
+            <div class="radio-live-now"><span class="radio-badge">TRỰC TIẾP</span><%= radio.live.now ? radio.live.now.title + (radio.live.now.desc ? " — " + radio.live.now.desc : "") : "Đài Phát thanh Ninh Bình" %></div>
+            <% if (radio.live.next) { %><div class="radio-live-next">Tiếp theo: <%= radio.live.next.title %><%= radio.live.next.desc ? " — " + radio.live.next.desc : "" %></div><% } %>
+            <div class="radio-live-status" id="radioLiveStatus" role="status" aria-live="polite"></div>
+            <a class="radio-src" id="radioLiveSrc" href="<%= radio.live.pageUrl %>" target="_blank" rel="noopener">Nguồn: <%= radio.live.org %> ↗</a>
+          </div>
+          <audio id="radioLiveAudio" preload="none"></audio>
+        </div>
+      </div>
+    <% } %>
+
+    <% (radio.channels || []).forEach(function (ch) { %>
+      <div class="radio-ch">
+        <div class="radio-ch-head">
+          <span class="radio-ch-name">🎧 <%= ch.name %></span>
+          <span class="radio-ch-org">Nguồn: <%= ch.org %></span>
+        </div>
+        <% ch.items.forEach(function (it, idx) { %>
+          <% if (idx === 1) { %><div class="radio-more" hidden><% } %>
+          <div class="radio-item">
+            <% if (it.thumb) { %><img class="radio-thumb" src="<%= it.thumb %>" alt="" loading="lazy" /><% } %>
+            <div class="radio-body">
+              <p class="radio-title"><%= it.title %></p>
+              <% if (it.publishedAt) { %><div class="radio-meta">Phát lúc <%= it.publishedAt %></div><% } %>
+              <% if (it.mp3) { %>
+                <audio controls preload="none" src="<%= it.mp3 %>"></audio>
+                <p class="radio-err" hidden>Không phát được ở đây, bấm "Xem trên trang gốc" để nghe.</p>
+              <% } %>
+              <a class="radio-src" href="<%= it.link %>" target="_blank" rel="noopener">Xem trên trang gốc ↗</a>
+            </div>
+          </div>
+          <% if (idx === ch.items.length - 1 && ch.items.length > 1) { %></div>
+            <button type="button" class="radio-more-btn" data-more="<%= ch.items.length - 1 %>">Xem thêm <%= ch.items.length - 1 %> bản tin ▾</button>
+          <% } %>
+        <% }) %>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<!-- ====== Lịch công tác tuần — mỗi ngày 1 trang, khối cuối cùng ====== -->
+<div class="section" id="lichTuanBlock" hidden>
+  <div class="section-title">Lịch công tác tuần</div>
+  <div id="ltPager"></div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-main">
+    <a class="footer-social fb" href="https://www.facebook.com/xuangiangngaymoi/" target="_blank" rel="noopener" aria-label="Facebook Xuân Giang Ngày Mới">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.45h-1.26c-1.24 0-1.63.77-1.63 1.56v1.89h2.77l-.44 2.91h-2.33V22c4.78-.79 8.44-4.94 8.44-9.94z"/></svg>
+    </a>
+
+    <span class="footer-text">
+      Đảng uỷ xã Xuân Giang
+
+      <a class="admin-link" href="/quanly">· Quản lý</a>
+    </span>
+
+    <a class="footer-social yt" href="https://www.youtube.com/@XU%C3%82NGIANGNG%C3%80YM%E1%BB%9AI" target="_blank" rel="noopener" aria-label="Youtube Xuân Giang Ngày Mới">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.51 3.5 12 3.5 12 3.5s-7.51 0-9.38.56A3.02 3.02 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.14C4.49 20.5 12 20.5 12 20.5s7.51 0 9.38-.56a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8ZM9.75 15.5v-7l6.5 3.5-6.5 3.5Z"/></svg>
+    </a>
+  </div>
+</footer>
+
+  <!-- ====== Nút nhạc nền + tự cuộn trang lên/xuống (xem
+       public/music-autoscroll.js) ====== -->
+  <button id="musicToggleBtn" class="music-toggle-btn" aria-label="Bật/tắt nhạc nền">🎵</button>
+  <audio id="bgMusic" loop preload="none">
+    <source src="https://raw.githubusercontent.com/ninjavanxuantruong/mp3vietnam2/main/N%E1%BA%AFng%20M%E1%BB%9Bi%20Tr%C3%AAn%20Qu%C3%AA%20H%C6%B0%C6%A1ng%20(Official%20MV).mp3" type="audio/mpeg" />
+  </audio>
+
+  <script type="application/json" id="initialSuggestedPosts"><%- JSON.stringify(suggestedPosts || []) %></script>
+
+  <script src="/public/main.js"></script>
+  <script src="/public/rotator.js"></script>
+<script src="/public/mosaic-hero.js"></script>
+<script src="/public/world-news-spotlight.js"></script>
+<script src="/public/podcast-player.js"></script>
+<script src="/public/radio-player.js"></script>
+<script src="/public/lich-tuan.js"></script>
+  <script src="/public/music-autoscroll.js"></script>
+<script>
+  window.__XUNG_DANH_CAN_HOI__ = <%- JSON.stringify(!daXungDanh) %>;
+  window.__CHI_BO_LIST__ = <%- JSON.stringify(chiBoList) %>;
+  window.__CSRF_TOKEN__ = <%- JSON.stringify(csrfToken) %>;
+</script>
+<script src="/public/xung-danh.js"></script>
+</body>
+</html>

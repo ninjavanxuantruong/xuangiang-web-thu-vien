@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= type %> — Thư viện Đảng bộ Xuân Giang</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:12px;color:#fff;">
+      <div class="logo">★</div>
+      <div>
+        <div class="title">Thư viện Đảng bộ Xuân Giang</div>
+        <div class="subtitle"><%= type %></div>
+      </div>
+    </a>
+    <div class="spacer"></div>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+  <div class="section">
+    <div class="section-title"><%= type %> (<%= docs.length %> tài liệu)</div>
+
+    <% if (docs.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có tài liệu nào trong danh mục này.</p>
+    <% } else { %>
+      <div class="card-grid">
+        <% docs.forEach(function(doc) { %>
+        <div class="card">
+          <a class="card-link" href="/doc/<%= encodeURIComponent(doc.name) %>">
+            <div class="card-thumb" data-doc-cover="<%= doc.name %>"></div>
+            <div class="card-title"><%= doc.name %></div>
+            <% if (doc.summaryD) { %>
+              <div class="card-tag">🧠 Có mindmap</div>
+            <% } %>
+          </a>
+          <div class="card-actions">
+            <% if (!doc.url.includes('youtube.com') && !doc.url.includes('youtu.be')) { %>
+              <a href="/tai-ve/<%= encodeURIComponent(doc.name) %>" target="_blank">⬇ Tải</a>
+            <% } %>
+            <button type="button" data-copy-link="/doc/<%= encodeURIComponent(doc.name) %>">🔗 Chia sẻ</button>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly">· Quản lý</a>
+  </footer>
+
+  <script src="/public/main.js"></script>
+  <%- include("partials/xung-danh") %>
+</body>
+</html>

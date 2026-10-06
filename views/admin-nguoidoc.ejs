@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thống kê người đọc — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .toolbar-row select, .toolbar-row input {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+    .toolbar-row button {
+      background: var(--text-primary);
+      color: var(--bg-page);
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .stat-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .number { font-size: 24px; font-weight: 700; color: var(--color-brand); }
+    .stat-box .label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    table.nd-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+    table.nd-table th, table.nd-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
+    table.nd-table th { background: var(--bg-page); font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+    table.nd-table tr:last-child td { border-bottom: none; }
+    .section-title { margin-top: 28px; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Thống kê người đọc tài liệu</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/gop-y" class="account-btn" style="margin-right:8px;">💬 Góp ý</a>
+    <a href="/quanly/bo-nho-dem" class="account-btn">🗂 Bộ nhớ đệm</a>
+  </header>
+
+  <div class="section">
+    <p style="font-size:13px;color:var(--text-muted);">
+      Số liệu dưới đây do người đọc TỰ KHAI họ tên + chi bộ khi vào trang
+      (không có xác thực đúng người), và chỉ tính người đã "xưng danh" —
+      người xem ẩn danh không nằm trong số liệu này. Dùng để tham khảo mức
+      độ quan tâm, không nên dùng để đánh giá cá nhân một cách máy móc.
+    </p>
+
+    <form method="GET" action="/quanly/nguoi-doc" class="toolbar-row">
+      <input type="month" name="thang" value="<%= thang %>" />
+      <select name="chiBoId">
+        <option value="">— Tất cả chi bộ —</option>
+        <% chiBoList.forEach(function(cb) { %>
+          <option value="<%= cb.id %>" <%= cb.id === chiBoId ? "selected" : "" %>><%= cb.name %></option>
+        <% }) %>
+      </select>
+      <button type="submit">Xem</button>
+    </form>
+
+    <div class="stat-summary">
+      <div class="stat-box">
+        <div class="number"><%= stats.totalLuot %></div>
+        <div class="label">Lượt đọc trong tháng<% if (chiBoId) { %> (chi bộ đã chọn)<% } %></div>
+      </div>
+      <div class="stat-box">
+        <div class="number"><%= stats.soNguoi %></div>
+        <div class="label">Số người đã đọc</div>
+      </div>
+    </div>
+
+
+    <div class="section-title">Đã đăng ký tên, theo chi bộ</div>
+    <p style="font-size:12px;color:var(--text-muted);">
+      Danh sách người đã điền tên + chi bộ ở cửa sổ "xưng danh" (kể cả người chưa đọc tài liệu nào).
+      Cột "Đã đọc" là số tài liệu họ đọc trong tháng đang chọn ở trên.
+      Bấm <b>Xoá</b> để gỡ tên khỏi danh sách (sai tên, trùng, thử nghiệm...): lượt đọc của người đó cũng bị xoá,
+      và nếu họ vào lại trang web thì sẽ được hỏi tên lại.
+    </p>
+    <% var rosterShow = roster.filter(function(g){ return !chiBoId || g.id === chiBoId; }); %>
+    <% var tongDangKy = rosterShow.reduce(function(n,g){ return n + g.members.length; }, 0); %>
+    <% var chiBoTrong = rosterShow.filter(function(g){ return g.members.length === 0; }).length; %>
+    <div class="stat-summary">
+      <div class="stat-box"><div class="number"><%= tongDangKy %></div><div class="label">Người đã đăng ký tên</div></div>
+      <div class="stat-box"><div class="number"><%= chiBoTrong %></div><div class="label">Chi bộ chưa có ai đăng ký</div></div>
+    </div>
+    <% rosterShow.forEach(function(g) { %>
+      <details <%= g.members.length ? "open" : "" %> style="margin-bottom:12px;">
+        <summary style="cursor:pointer;font-weight:600;font-size:14px;margin-bottom:6px;">
+          <%= g.name %> — <%= g.members.length %> người
+        </summary>
+        <% if (g.members.length === 0) { %>
+          <p style="color:var(--text-muted);font-size:13px;margin:6px 0 0 16px;">Chưa có ai đăng ký.</p>
+        <% } else { %>
+          <table class="nd-table">
+            <thead><tr><th>Họ tên</th><th>Đăng ký lúc</th><th>Đã đọc</th><th></th></tr></thead>
+            <tbody>
+              <% g.members.forEach(function(m) { %>
+                <tr>
+                  <td><%= m.name %></td>
+                  <td><%= m.createdAt ? m.createdAt.slice(0, 10).split("-").reverse().join("/") : "—" %></td>
+                  <td><%= m.soTaiLieu %></td>
+                  <td>
+                    <form method="POST" action="/quanly/nguoi-doc/xoa" style="margin:0;"
+                          onsubmit="return confirm('Xoá người này khỏi danh sách và xoá luôn lượt đọc của họ?');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="chiBoId" value="<%= m.chiBoId %>" />
+                      <input type="hidden" name="name" value="<%= m.name %>" />
+                      <input type="hidden" name="thang" value="<%= thang %>" />
+                      <input type="hidden" name="loc" value="<%= chiBoId %>" />
+                      <button type="submit" style="background:#b3261e;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;">Xoá</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </details>
+    <% }) %>
+
+    <div class="section-title">Theo người đọc</div>
+    <% if (stats.people.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có ai đọc tài liệu trong khoảng này.</p>
+    <% } else { %>
+      <table class="nd-table">
+        <thead><tr><th>Họ tên</th><th>Chi bộ</th><th>Số tài liệu đã đọc</th><th></th></tr></thead>
+        <tbody>
+          <% stats.people.forEach(function(p) { %>
+            <tr>
+              <td><%= p.name %></td><td><%= p.chiBoName %></td><td><%= p.soTaiLieu %></td>
+              <td>
+                <form method="POST" action="/quanly/nguoi-doc/xoa" style="margin:0;"
+                      onsubmit="return confirm('Xoá người này khỏi danh sách và xoá luôn lượt đọc của họ?');">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="chiBoId" value="<%= p.chiBoId %>" />
+                  <input type="hidden" name="name" value="<%= p.name %>" />
+                  <input type="hidden" name="thang" value="<%= thang %>" />
+                  <input type="hidden" name="loc" value="<%= chiBoId %>" />
+                  <button type="submit" style="background:#b3261e;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;">Xoá</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <div class="section-title">Theo tài liệu</div>
+    <% if (stats.docs.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có dữ liệu.</p>
+    <% } else { %>
+      <table class="nd-table">
+        <thead><tr><th>Tên tài liệu</th><th>Số lượt đọc</th></tr></thead>
+        <tbody>
+          <% stats.docs.forEach(function(d) { %>
+            <tr><td><%= d.docName %></td><td><%= d.count %></td></tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly/thoat">· Thoát</a>
+  </footer>
+
+</body>
+</html>
