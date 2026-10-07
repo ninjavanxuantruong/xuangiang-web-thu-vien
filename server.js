@@ -19,10 +19,10 @@ import { getAudioForText, normalizeText, getAudioCacheStats, clearAudioCache } f
 import { getLatestVideos } from "./youtube.js";
 import { getChannelLatestVideos } from "./channelVideos.js";
 import { requireAdmin, checkAdminPassword } from "./adminAuth.js";
-import { getWordParagraphs, stripHtml } from "./docReader.js";
+import { getWordDoc, stripHtml } from "./docReader.js";
 import { getNhanVatList, buildNhanVatArticle } from "./nhanvat.js";
 import { getFallbackSvgMarkup } from "./fallback-images.js";
-import { summarizeDocument } from "./summarizer.js";
+import { summarizeDocument, buildSlides, buildFullView } from "./summarizer.js";
 
 import { getMosaicZones } from "./mosaicFeed.js";
 import { getWorldNewsFast, getWorldNewsById } from "./worldNews.js";
@@ -584,8 +584,10 @@ app.get("/doc/:name", async (req, res) => {
       if (!fileId) return res.status(400).send("Không xác định được tài liệu Google Docs");
 
       const docxUrl = `https://docs.google.com/document/d/${fileId}/export?format=docx`;
-      const textBlocks = await getWordParagraphs(docxUrl);
+      const { textBlocks, blocks } = await getWordDoc(docxUrl);
       const summary = summarizeDocument(textBlocks.map(stripHtml));
+      summary.slides = buildSlides(blocks, doc.name);
+      summary.full = buildFullView(blocks);
       return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary });
     }
 
@@ -595,8 +597,10 @@ app.get("/doc/:name", async (req, res) => {
     const kind = await detectFileKind(directUrl);
 
     if (kind === "word") {
-      const textBlocks = await getWordParagraphs(directUrl);
+      const { textBlocks, blocks } = await getWordDoc(directUrl);
       const summary = summarizeDocument(textBlocks.map(stripHtml));
+      summary.slides = buildSlides(blocks, doc.name);
+      summary.full = buildFullView(blocks);
       return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary });
     }
 
@@ -608,7 +612,42 @@ app.get("/doc/:name", async (req, res) => {
     res.status(500).send("Không thể hiển thị tài liệu");
   }
 });
+// ====== Tải file tài liệu (nút "⬇ Tải" / "⬇ Tải về") ======
+// Chuyển thẳng người dùng sang link tải của Google (Drive / Google Docs) — file đi từ Google
+// về máy họ, KHÔNG đi qua server mình nên không tốn băng thông Render. Chỉ nhận tài liệu có trong
+// sheet (tra theo tên), không phải "mở link tuỳ ý".
+app.get("/tai-ve/:name", async (req, res) => {
+  try {
+    const docs = await getDocuments();
+    const doc = docs.find((d) => d.name === req.params.name);
+    if (!doc) return res.status(404).send("Không tìm thấy tài liệu");
 
+    const url = String(doc.url || "");
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      return res.status(400).send("Tài liệu này là video YouTube, không có file để tải");
+    }
+
+    // Văn bản Google Docs -> xuất ra file Word (.docx)
+    if (url.includes("docs.google.com/document")) {
+      const m = url.match(/\/d\/([^/]+)\//);
+      if (!m) return res.status(400).send("Không xác định được tài liệu Google Docs");
+      return res.redirect(`https://docs.google.com/document/d/${m[1]}/export?format=docx`);
+    }
+
+    // File tải lên Google Drive (Word / PDF...)
+    const fileId = extractDriveFileId(url);
+    if (fileId) {
+      return res.redirect(`https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`);
+    }
+
+    // Link khác (ví dụ file nằm sẵn ở trang khác)
+    if (/^https?:\/\//i.test(url)) return res.redirect(url);
+    res.status(404).send("Tài liệu này chưa có link tải");
+  } catch (err) {
+    console.error("GET /tai-ve/:name error:", err);
+    res.status(500).send("Không tải được file");
+  }
+});
 // ====== PDF (Drive) — lưu tạm ra đĩa (xem pdfCache.js) ======
 // Người đầu tiên mở 1 PDF: server tải từ Drive 1 lần rồi lưu lại; mọi người sau
 // được phục vụ thẳng từ đĩa (có hỗ trợ tải từng phần cho trình xem PDF). Chỉ
