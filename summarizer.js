@@ -141,3 +141,194 @@ export function summarizeDocument(plainParagraphs) {
 
   return { tldr, paragraphSummaries, mindmapBranches };
 }
+// ====================== SLIDE TÓM TẮT ======================
+const SLIDE_ROMAN_RE = /^[IVX]{1,6}[\-.)]\s*(?!\d)\S/;
+const SLIDE_DECIMAL_RE = /^(\d{1,2}(?:\.\d{1,2})*)[.)]\s+(?!\d)\S/;
+const SLIDE_NOISE_RE = /^[\s\-–—_*•.=~]+$/;
+const MAX_BULLETS_PER_SLIDE = 5;
+const MAX_CHARS_PER_SLIDE = 750;
+const MAX_BULLET_LEN = 260;
+
+function slideHeadingLevel(text, tag) {
+  // Đề mục thật thường KHÔNG kết thúc bằng dấu chấm/chấm phẩy/phẩy.
+  // Ý nội dung có đánh số (vd "1. Các ban đảng ... Nghị quyết này.") thì có.
+  const looksLikeHeading = !/[.;,]$/.test(text);
+  if (SLIDE_ROMAN_RE.test(text) && text.length <= 160 && looksLikeHeading) return 1;
+  const m = SLIDE_DECIMAL_RE.exec(text);
+  if (m && text.length <= 140 && looksLikeHeading) return m[1].includes(".") ? 3 : 2;
+  if (/^h[1-6]$/.test(tag || "") && text.length <= 200 && looksLikeHeading) return 2;
+  return 0;
+}
+
+function clampText(s, max) {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const sp = cut.lastIndexOf(" ");
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[,;:\s]+$/, "") + "…";
+}
+
+function pickBullet(text) {
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) return "";
+  let first = sentences[0];
+  if (first.length > 140) {
+    const semi = first.indexOf(";");
+    if (semi > 30) first = first.slice(0, semi + 1);
+  }
+  const picked = [first];
+  const extra = sentences.slice(1).find((s) => hasNumber(s) && s.length <= 200);
+  if (extra) picked.push(extra);
+  return clampText(normalizeEnding(picked.join(" ")), MAX_BULLET_LEN);
+}
+
+export function buildSlides(blocks, docName) {
+  const items = (blocks || [])
+    .map((b) => ({ tag: b.tag, text: String(b.text || "").replace(/\s+/g, " ").trim() }))
+    .filter((b) => b.text && !SLIDE_NOISE_RE.test(b.text));
+
+  const slides = [];
+
+  // Phần mở đầu (trước đề mục đầu tiên)
+  let start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) === 1);
+  if (start === -1) start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) >= 2);
+  if (start === -1) start = 0;
+  const pre = items.slice(0, start).map((b) => b.text);
+
+  // Slide bìa: tên văn bản + dòng "Về ..." + số hiệu/ngày ban hành
+  const subtitle = pre.find((t) => /^Về\s/i.test(t)) || "";
+  const meta = pre
+    .filter((t) => /^Số\s/i.test(t) || /ngày\s+\d{1,2}\s+tháng/i.test(t))
+    .join("  ·  ");
+  slides.push({ type: "cover", title: docName || "Tóm tắt văn bản", subtitle: clampText(subtitle, 300), meta });
+
+  // Các đoạn mở đầu có nội dung thật (đoạn dài) -> slide "Mở đầu", KHÔNG bỏ sót
+  const introBullets = pre
+    .filter((t) => t.length >= 80 && !/^Về\s/i.test(t) && !/ngày\s+\d{1,2}\s+tháng/i.test(t))
+    .map((t) => pickBullet(t.replace(/^[-–•*+]\s*/, "")))
+    .filter(Boolean);
+
+  let title = "", label = "", crumb = "", parent2 = "";
+  let labelUsed = false;
+  let bullets = [];
+
+  function flush() {
+    if (bullets.length === 0) return;
+    const groups = [];
+    let g = [];
+    let chars = 0;
+    bullets.forEach((b) => {
+      if (g.length >= MAX_BULLETS_PER_SLIDE || (g.length > 0 && chars + b.length > MAX_CHARS_PER_SLIDE)) {
+        groups.push(g);
+        g = [];
+        chars = 0;
+      }
+      g.push(b);
+      chars += b.length;
+    });
+    if (g.length) groups.push(g);
+    groups.forEach((grp, i) => {
+      slides.push({ type: "content", title, crumb, label, bullets: grp, cont: i > 0 });
+    });
+    bullets = [];
+    labelUsed = true;
+  }
+
+  if (introBullets.length) {
+    title = "Mở đầu";
+    bullets = introBullets;
+    flush();
+    title = "";
+  }
+  labelUsed = true;
+
+  // Đề mục số đứng ngay trước 1 đề mục khác mà không có ý nào bên dưới ->
+  // đưa chính đề mục đó thành 1 ý, để không bị mất khỏi bản tóm tắt.
+  function rescueEmptyLabel() {
+    if (label && !labelUsed && bullets.length === 0) {
+      bullets = [label];
+      label = "";
+      flush();
+    }
+  }
+
+  items.slice(start).forEach((b) => {
+    const level = slideHeadingLevel(b.text, b.tag);
+    if (level === 1) {
+      flush(); rescueEmptyLabel();
+      title = b.text; label = ""; crumb = ""; parent2 = ""; labelUsed = true;
+    } else if (level === 2) {
+      flush(); rescueEmptyLabel();
+      label = b.text; crumb = ""; parent2 = b.text; labelUsed = false;
+    } else if (level === 3) {
+      flush();
+      label = b.text; crumb = parent2; labelUsed = false;
+    } else {
+      const clean = b.text.replace(/^[-–•*+]\s*/, "");
+      const bullet = pickBullet(clean);
+      if (bullet) bullets.push(bullet);
+    }
+  });
+  flush();
+  rescueEmptyLabel();
+
+  return slides;
+}
+
+// ====================== TRANG XEM ĐẦY ĐỦ (đẹp, có đề mục & thẻ) ======================
+function escHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// Tô nổi phần trăm và số liệu có đơn vị (7,2%, 85 triệu đồng/người/năm, 56 doanh nghiệp...)
+const FV_NUM_RE =
+  /(\d+(?:[.,]\d+)*\s?%|\d+(?:[.,]\d+)*\s?(?:triệu đồng|tỷ đồng|nghìn tỷ|triệu|tỷ|nghìn|ha|km|doanh nghiệp|cơ sở|lao động|người|xã|phường)(?![\p{L}])(?:\/\p{L}+)*)/giu;
+
+function fvHighlight(text) {
+  return escHtml(text).replace(FV_NUM_RE, '<b class="fv-num">$1</b>');
+}
+
+export function buildFullView(blocks) {
+  const items = (blocks || [])
+    .map((b) => ({ tag: b.tag, text: String(b.text || "").replace(/\s+/g, " ").trim() }))
+    .filter((b) => b.text && !SLIDE_NOISE_RE.test(b.text));
+
+  let start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) === 1);
+  if (start === -1) start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) >= 2);
+  if (start === -1) start = 0;
+
+  const out = [];
+
+  // Phần đầu văn bản (trước đề mục đầu tiên)
+  items.slice(0, start).forEach((b) => {
+    const t = b.text;
+    if (/^Về\s/i.test(t)) out.push({ type: "subject", c: 0, html: escHtml(t) });
+    else if (t.length < 90) out.push({ type: "meta", c: 0, html: escHtml(t) });
+    else out.push({ type: "p", c: 0, html: fvHighlight(t) });
+  });
+
+  let c = 0;
+  let sectionCount = -1;
+  items.slice(start).forEach((b) => {
+    const level = slideHeadingLevel(b.text, b.tag);
+    if (level === 1) {
+      sectionCount += 1;
+      c = sectionCount % 6;
+      const m = /^([IVX]{1,6})[\-.)]\s*(.*)$/.exec(b.text);
+      out.push({
+        type: "section", c,
+        label: m ? "PHẦN " + m[1] : "",
+        text: m && m[2] ? m[2] : b.text
+      });
+    } else if (level === 2 || level === 3) {
+      out.push({ type: "sub", c, level, text: b.text });
+    } else {
+      const bullet = /^[-–•*+]\s+(.*)$/.exec(b.text);
+      const numbered = /^(\d{1,2}|[a-zđ])[.)]\s+(.+)$/.exec(b.text);
+      if (bullet) out.push({ type: "bullet", c, html: fvHighlight(bullet[1]) });
+      else if (numbered) out.push({ type: "item", c, num: numbered[1], html: fvHighlight(numbered[2]) });
+      else out.push({ type: "p", c, html: fvHighlight(b.text) });
+    }
+  });
+
+  return out;
+}
