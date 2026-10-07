@@ -53,14 +53,20 @@ const VOWEL_TONE_MAP = {
   "Ư": { acute: "Ứ", grave: "Ừ", hook: "Ử", tilde: "Ữ", dot: "Ự" }
 };
 
-function fixVietnameseDiacritics(text) {
-  let s = String(text || "");
-  for (const [markChar, toneName] of TONE_MARK_FIX) {
-    const escaped = markChar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`([${Object.keys(VOWEL_TONE_MAP).join("")}])${escaped}`, "g");
-    s = s.replace(re, (whole, vowel) => VOWEL_TONE_MAP[vowel][toneName] || whole);
-  }
-  return s;
+const TONE_MARKS = {
+  "´": "\u0301", "ˊ": "\u0301", "\u02B9": "\u0301",
+  "`": "\u0300", "ˋ": "\u0300"
+};
+
+export function fixVietnameseDiacritics(text) {
+  const re = /([aăâeêioôơuưyAĂÂEÊIOÔƠUƯY])([´ˊ\u02B9`ˋ])/g;
+  return String(text || "")
+    .normalize("NFC")
+    .replace(re, (whole, vowel, mark) => {
+      const composed = (vowel + TONE_MARKS[mark]).normalize("NFC");
+      return composed.length === 1 ? composed : whole;
+    })
+    .normalize("NFC");
 }
 
 // Lưu ý: dòng Gemini 2.5 (gồm gemini-2.5-flash-lite) đã có lịch ngừng
