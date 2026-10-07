@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= article.title %> — <%= article.sourceName %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap&subset=vietnamese" rel="stylesheet" />
   <style>
     :root {
       --wn-bg: #f4f1ea;
@@ -26,7 +29,7 @@
       margin: 0;
       background: var(--wn-bg);
       color: var(--wn-text);
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: "Noto Serif", "Times New Roman", serif;
       line-height: 1.7;
     }
     .wn-topbar {
@@ -111,13 +114,28 @@
     .wn-citation dl { margin: 0; }
     .wn-citation dt { font-weight: bold; color: var(--wn-text); }
     .wn-citation dd { margin: 0 0 10px; }
+    .wn-tts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+    .wn-tts button {
+      font-family: Arial, sans-serif; font-size: 13px;
+      border: 1px solid var(--wn-line); background: var(--wn-paper); color: var(--wn-text);
+      border-radius: 6px; padding: 6px 12px; cursor: pointer;
+    }
+    .tts-chunk.sentence-highlight { background: rgba(166, 38, 38, 0.18); border-radius: 3px; }
+    .wn-summary p { margin: 0 0 14px; }
+    .tts-jump-btn {
+      float: left; width: 20px; height: 20px; margin: 4px 8px 0 0; border: none;
+      border-radius: 50%; background: var(--wn-accent); color: #fff; font-size: 10px;
+      line-height: 20px; text-align: center; padding: 0; cursor: pointer; opacity: 0.4;
+    }
+    .tts-jump-btn:hover { opacity: 1; }
+    @media (hover: none) { .tts-jump-btn { opacity: 0.6; } }
   </style>
 </head>
 <body>
 
   <div class="wn-topbar">
     <a href="/">← Trang chủ</a>
-    <button data-toggle-theme onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')">🌓 Sáng / Tối</button>
+    <button data-toggle-theme>🌙 Tối</button>
   </div>
 
   <div class="wn-wrap">
@@ -127,7 +145,13 @@
     </div>
 
     <div class="wn-source-tag"><%= article.sourceName %></div>
-    <h1 class="wn-title"><%= article.title %></h1>
+    <h1 class="wn-title tts-chunk"><%= article.title %></h1>
+    <div class="wn-tts">
+      <button data-tts-play>▶ Đọc bài</button>
+      <button data-tts-stop>■ Dừng</button>
+      <button data-speed-down>Chậm</button>
+      <button data-speed-up>Nhanh</button>
+    </div>
     <% if (article.image) { %>
       <img
         src="<%= article.image %>"
@@ -141,7 +165,11 @@
       <% } %>
     </div>
 
-    <div class="wn-summary"><%= article.summaryVi %></div>
+    <div class="wn-summary">
+      <% String(article.summaryVi || "").split(/\n+/).filter(function (p) { return p.trim(); }).forEach(function (p) { %>
+        <p class="tts-chunk"><%= p.trim() %></p>
+      <% }) %>
+    </div>
 
     <div class="wn-citation">
       <dl>
@@ -157,5 +185,6 @@
     </div>
   </div>
 
+  <script src="/public/main.js"></script>
 </body>
 </html>
