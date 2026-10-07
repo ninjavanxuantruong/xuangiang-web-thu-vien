@@ -34,7 +34,7 @@ import { fetchSheetRaw } from "./sheets.js";
 import { findWorldNewsRule } from "./worldNewsRules.js";
 import { getSuggestedPost } from "./newsFinder.js";
 import { extractArticleText } from "./articleText.js";
-import { summarizeAndMaybeTranslate } from "./aiSummarize.js";
+import { summarizeAndMaybeTranslate, fixVietnameseDiacritics } from "./aiSummarize.js";
 import { getFallbackImage } from "./fallback-images.js";
 import { getOrRefresh, peek } from "./firestoreCache.js";
 
@@ -201,7 +201,14 @@ async function buildAllWorldNews(sources) {
  */
 export async function getWorldNewsFast() {
   const sources = await getSources();
-  const list = await getOrRefresh(CACHE_KEY, () => buildAllWorldNews(sources));
+  const raw = await getOrRefresh(CACHE_KEY, () => buildAllWorldNews(sources));
+  // Sửa dấu tiếng Việt khi đọc ra, để cả bài cũ đã lưu cache cũng được sửa
+  const list = (raw || []).map((a) => ({
+    ...a,
+    title: fixVietnameseDiacritics(a.title),
+    summaryVi: fixVietnameseDiacritics(a.summaryVi),
+    author: fixVietnameseDiacritics(a.author)
+  }));
   lastList = list;
   return list;
 }
