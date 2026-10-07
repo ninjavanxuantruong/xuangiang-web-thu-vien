@@ -433,6 +433,7 @@
   <script src="/public/music-autoscroll.js"></script>
 <script>
   window.__XUNG_DANH_CAN_HOI__ = <%- JSON.stringify(!daXungDanh) %>;
+    window.__XUNG_DANH_TEN__ = <%- JSON.stringify(daXungDanh ? tenXungDanh : "").replace(/</g, "\\u003c") %>;
   window.__CHI_BO_LIST__ = <%- JSON.stringify(chiBoList) %>;
   window.__CSRF_TOKEN__ = <%- JSON.stringify(csrfToken) %>;
 </script>
