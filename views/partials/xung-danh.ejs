@@ -1,6 +1,7 @@
 <%# Popup xung danh dung chung cho cac trang tai lieu/van ban. Cach dung: them 1 dong include partials/xung-danh truoc the dong body. Can middleware identityGuard (nguoiDoc.js) de co xungDanh; thieu thi coi nhu chua xung danh. %>
 <script>
   window.__XUNG_DANH_CAN_HOI__ = <%- JSON.stringify(!(typeof xungDanh !== "undefined" && xungDanh && xungDanh.da)) %>;
+  window.__XUNG_DANH_TEN__ = <%- JSON.stringify(typeof xungDanh !== "undefined" && xungDanh && xungDanh.da ? xungDanh.ten : "").replace(/</g, "\\u003c") %>;
   window.__CSRF_TOKEN__ = <%- JSON.stringify(typeof csrfToken !== "undefined" ? csrfToken : "") %>;
 </script>
 <script src="/public/xung-danh.js"></script>
