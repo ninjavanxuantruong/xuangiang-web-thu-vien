@@ -73,3 +73,50 @@ export function interleaveImages(paragraphs, images) {
 
   return blocks;
 }
+const ENTITY_MAP = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&nbsp;": " " };
+function decodeEntities(s) {
+  return String(s)
+    .replace(/&(?:amp|lt|gt|quot|nbsp|#39);/g, (m) => ENTITY_MAP[m] || m)
+    .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)));
+}
+
+/**
+ * Tách HTML của mammoth thành các khối [{ tag, text }] — MỖI đoạn <p>,
+ * tiêu đề <h1>-<h6>, mục <li> và mỗi dòng xuống hàng (<br>) là 1 khối riêng.
+ */
+export function htmlToBlocks(html) {
+  const blocks = [];
+  const re = /<(p|h[1-6]|li)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const tag = m[1].toLowerCase();
+    m[2]
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .split("\n")
+      .forEach((line) => {
+        const text = decodeEntities(line).replace(/\s+/g, " ").trim();
+        if (text) blocks.push({ tag, text });
+      });
+  }
+  return blocks;
+}
+
+export async function getWordDoc(fileUrl) {
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error(`Tải file Word thất bại: ${response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const result = await mammoth.convertToHtml({ buffer });
+  const html = result.value;
+
+  const textBlocks = html
+    .split(/<\/p>/i)
+    .map((p) => p.replace(/<p[^>]*>/i, "").trim())
+    .filter(Boolean);
+
+  return { textBlocks, blocks: htmlToBlocks(html) };
+}
