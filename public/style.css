@@ -1483,3 +1483,90 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
 .xd-btn { border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer; }
 .xd-skip { background: transparent; color: var(--text-muted); }
 .xd-ok { background: var(--color-brand); color: #fff; }
+
+/* ===== Slide tóm tắt ===== */
+.slide { background: var(--s-bg); color: var(--s-fg); border-radius: 12px; padding: 12px; margin: 0 0 18px; }
+.slide-frame { border: 2px solid var(--s-ac); border-radius: 8px; padding: 22px 26px; min-height: 320px; display: flex; flex-direction: column; }
+.slide-top { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--s-ac); letter-spacing: .04em; margin-bottom: 14px; }
+.slide-title { font-size: 1.45em; font-weight: 700; line-height: 1.3; color: #fff; padding-bottom: 10px; border-bottom: 1px solid var(--s-ln); }
+.slide-crumb { font-size: .85em; color: var(--s-ac); margin-top: 12px; }
+.slide-label { align-self: flex-start; margin: 14px 0 12px; background: var(--s-chip); color: var(--s-chipfg); font-weight: 700; padding: 5px 14px; border-radius: 6px; }
+.slide-crumb + .slide-label { margin-top: 6px; }
+.slide-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; line-height: 1.6; }
+.slide-list li { display: flex; gap: 10px; margin: 0; }
+.slide-list li::before { content: "▸"; color: var(--s-ac); flex: none; }
+.slide-cover { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 14px; }
+.slide-cover-title { font-size: 1.8em; font-weight: 700; line-height: 1.3; color: #fff; }
+.slide-cover-sub { font-size: 1.1em; line-height: 1.5; }
+.slide-cover-meta { font-size: .85em; color: var(--s-ac); }
+@media (max-width: 600px) { .slide-frame { padding: 16px; min-height: 260px; } }
+
+/* ===== Thanh nút mới (reader) ===== */
+.reader-toolbar.rt { justify-content: space-between; padding: 10px 16px 13px; gap: 10px 14px; }
+.rt-main { display: flex; flex-wrap: wrap; gap: 8px; }
+.reader-toolbar .rt-btn {
+  border-radius: 999px; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); transition: transform .1s ease, filter .15s ease;
+}
+.reader-toolbar .rt-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.reader-toolbar .rt-read { background: #0F6E56; }
+.reader-toolbar .rt-sum { background: #534AB7; }
+.reader-toolbar .rt-share { background: #993C1D; }
+.rt-sub { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.reader-toolbar .rt-sub button, .rt-sub a.rt-link {
+  background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);
+  border-radius: 6px; padding: 5px 9px; font-size: 12px; text-decoration: none; cursor: pointer;
+}
+.rt-home { font-size: 12px; color: var(--text-muted); }
+.rt-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+#rtProgressBar { height: 100%; width: 0; background: #1D9E75; transition: width .1s linear; }
+
+/* ===== Trình bày bản xem đầy đủ ===== */
+.fv-c0 { --fv-solid: #0F6E56; --fv-bar: #1D9E75; --fv-text: #0F6E56; --fv-bg: rgba(29, 158, 117, 0.12); }
+.fv-c1 { --fv-solid: #534AB7; --fv-bar: #7F77DD; --fv-text: #534AB7; --fv-bg: rgba(127, 119, 221, 0.13); }
+.fv-c2 { --fv-solid: #993C1D; --fv-bar: #D85A30; --fv-text: #993C1D; --fv-bg: rgba(216, 90, 48, 0.12); }
+.fv-c3 { --fv-solid: #185FA5; --fv-bar: #378ADD; --fv-text: #185FA5; --fv-bg: rgba(55, 138, 221, 0.12); }
+.fv-c4 { --fv-solid: #993556; --fv-bar: #D4537E; --fv-text: #993556; --fv-bg: rgba(212, 83, 126, 0.12); }
+.fv-c5 { --fv-solid: #854F0B; --fv-bar: #BA7517; --fv-text: #854F0B; --fv-bg: rgba(186, 117, 23, 0.13); }
+[data-theme="dark"] .fv-c0 { --fv-text: #5DCAA5; }
+[data-theme="dark"] .fv-c1 { --fv-text: #AFA9EC; }
+[data-theme="dark"] .fv-c2 { --fv-text: #F0997B; }
+[data-theme="dark"] .fv-c3 { --fv-text: #85B7EB; }
+[data-theme="dark"] .fv-c4 { --fv-text: #ED93B1; }
+[data-theme="dark"] .fv-c5 { --fv-text: #EF9F27; }
+
+.fv-section, .fv-sub, .fv-item, .fv-subject { position: relative; }
+.fv-section {
+  margin: 36px 0 16px; padding: 12px 44px 12px 18px; border-left: 6px solid var(--fv-bar);
+  background: var(--fv-bg); border-radius: 0 8px 8px 0; line-height: 1.3;
+}
+.fv-kicker { font-size: .7em; font-weight: 700; letter-spacing: .06em; color: var(--fv-text); }
+.fv-section-title { font-size: 1.25em; font-weight: 700; }
+.fv-sub { margin: 22px 0 10px; padding-right: 36px; }
+.fv-chip {
+  display: inline-block; background: var(--fv-solid); color: #fff; font-size: .9em; font-weight: 600;
+  padding: 4px 12px; border-radius: 6px; line-height: 1.5;
+}
+.fv-sub--3 .fv-chip { background: transparent; color: var(--fv-text); border: 1.5px solid var(--fv-bar); }
+.fv-item {
+  display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--border-color);
+  border-radius: 8px; padding: 12px 44px 12px 14px; margin: 0 0 10px; line-height: 1.75;
+}
+.fv-badge {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--fv-solid); color: #fff;
+  font-size: .75em; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+.fv-item-text { flex: 1; min-width: 0; }
+.fv-bullet { border-left: 3px solid var(--fv-bar); padding-left: 12px; }
+.fv-num { font-weight: 700; color: var(--fv-text); background: var(--fv-bg); padding: 0 4px; border-radius: 3px; }
+.fv-meta { text-align: center; font-size: .8em; color: var(--text-muted); margin: 0 0 4px; line-height: 1.5; }
+.fv-subject { text-align: center; font-weight: 700; font-size: 1.1em; margin: 14px 0 22px; padding: 0 30px; line-height: 1.5; }
+/* Nút ▶ nhỏ của thẻ/đề mục nằm góc phải, không đẩy bố cục */
+.fv-section .tts-jump-btn, .fv-sub .tts-jump-btn, .fv-item .tts-jump-btn, .fv-subject .tts-jump-btn {
+  float: none; position: absolute; top: 10px; right: 10px; margin: 0;
+}
+.fv-sub .tts-jump-btn { top: 4px; right: 0; }
+@media (max-width: 600px) {
+  .reader-toolbar .rt-btn { padding: 9px 16px; font-size: 13px; }
+  .fv-item { padding-right: 38px; }
+}
