@@ -42,22 +42,26 @@
 </head>
 <body>
 
-  <div class="reader-toolbar">
-    <button data-tts-play>▶ Đọc trang</button>
-    <button data-tts-stop>■ Dừng</button>
-    <button data-speed-down>Chậm</button>
-    <button data-speed-up>Nhanh</button>
-    <button data-font-smaller>Chữ nhỏ</button>
-    <button data-font-bigger>Chữ to</button>
-    <button data-open-listen-mode>🎧 Nghe khi di chuyển</button>
-    <button data-toggle-theme>🌙 Tối</button>
-    <a href="/tai-ve/<%= encodeURIComponent(doc.name) %>" target="_blank"
-       style="background:var(--text-primary);color:var(--bg-page);border:none;border-radius:6px;padding:6px 12px;font-size:12px;text-decoration:none;">⬇ Tải về</a>
-    <button data-copy-link="/doc/<%= encodeURIComponent(doc.name) %>">🔗 Chia sẻ</button>
-    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.tldr) { %>
-      <button id="toggleSummaryBtn">📝 Xem tóm tắt</button>
-    <% } %>
-    <a href="/" style="margin-left:auto;font-size:12px;color:var(--text-muted);">← Trang chính</a>
+  <div class="reader-toolbar rt">
+    <div class="rt-main">
+      <button class="rt-btn rt-read" data-tts-play>▶ Đọc trang</button>
+      <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.slides && summary.slides.length > 0) { %>
+        <button class="rt-btn rt-sum" id="toggleSummaryBtn">Xem tóm tắt</button>
+      <% } %>
+      <button class="rt-btn rt-share" data-copy-link="/doc/<%= encodeURIComponent(doc.name) %>">Chia sẻ</button>
+    </div>
+    <div class="rt-sub">
+      <button data-tts-stop>■ Dừng</button>
+      <button data-speed-down>Chậm</button>
+      <button data-speed-up>Nhanh</button>
+      <button data-font-smaller>A-</button>
+      <button data-font-bigger>A+</button>
+      <button data-open-listen-mode>🎧 Nghe khi di chuyển</button>
+      <button data-toggle-theme>🌙 Tối</button>
+      <a class="rt-link" href="/tai-ve/<%= encodeURIComponent(doc.name) %>" target="_blank">⬇ Tải về</a>
+    </div>
+    <a class="rt-home" href="/">← Trang chính</a>
+    <div class="rt-progress"><div id="rtProgressBar"></div></div>
   </div>
 
   <div style="display:none" data-doc-name><%= doc.name %></div>
@@ -65,31 +69,84 @@
   <div class="reader-content">
     <h1 style="font-size:1.3em;margin-bottom:4px;"><%= doc.name %></h1>
 
-    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.tldr) { %>
-      <div id="summaryView" style="display:none;background:var(--bg-page);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px 16px;margin:12px 0 20px;">
-        <div style="font-size:11px;font-weight:700;color:var(--color-brand);letter-spacing:.03em;margin-bottom:4px;">TÓM TẮT NHANH (TL;DR)</div>
-        <div style="font-size:14px;line-height:1.5;margin-bottom:10px;"><%= summary.tldr %></div>
-
-        <% if (summary.paragraphSummaries && summary.paragraphSummaries.length > 0) { %>
-          <div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.03em;margin-bottom:6px;">TÓM TẮT THEO TỪNG PHẦN</div>
-          <div style="margin-top:10px;font-size:13px;line-height:1.6;">
-            <% summary.paragraphSummaries.forEach(function(s) { %>
-              <% if (s.isHeading) { %>
-                <div style="margin:10px 0 4px;"><strong><%= s.text %></strong></div>
-              <% } else if (s.text) { %>
-                <div style="margin-bottom:6px;"><%= s.text %></div>
+    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.slides && summary.slides.length > 0) { %>
+      <%
+        var PALETTE = [
+          { bg: "#085041", fg: "#E1F5EE", ac: "#5DCAA5", ln: "#1D9E75", chip: "#E1F5EE", chipFg: "#04342C" },
+          { bg: "#3C3489", fg: "#EEEDFE", ac: "#AFA9EC", ln: "#7F77DD", chip: "#EEEDFE", chipFg: "#26215C" },
+          { bg: "#712B13", fg: "#FAECE7", ac: "#F0997B", ln: "#D85A30", chip: "#FAECE7", chipFg: "#4A1B0C" },
+          { bg: "#0C447C", fg: "#E6F1FB", ac: "#85B7EB", ln: "#378ADD", chip: "#E6F1FB", chipFg: "#042C53" },
+          { bg: "#72243E", fg: "#FBEAF0", ac: "#ED93B1", ln: "#D4537E", chip: "#FBEAF0", chipFg: "#4B1528" },
+          { bg: "#27500A", fg: "#EAF3DE", ac: "#97C459", ln: "#639922", chip: "#EAF3DE", chipFg: "#173404" },
+          { bg: "#633806", fg: "#FAEEDA", ac: "#EF9F27", ln: "#BA7517", chip: "#FAEEDA", chipFg: "#412402" }
+        ];
+        var lastC = -1;
+      %>
+      <div id="summaryView" style="display:none;margin:12px 0 20px;">
+        <% summary.slides.forEach(function(sl, i) {
+             var c;
+             do { c = Math.floor(Math.random() * PALETTE.length); } while (c === lastC);
+             lastC = c;
+             var P = PALETTE[c]; %>
+          <section class="slide" style="--s-bg:<%= P.bg %>;--s-fg:<%= P.fg %>;--s-ac:<%= P.ac %>;--s-ln:<%= P.ln %>;--s-chip:<%= P.chip %>;--s-chipfg:<%= P.chipFg %>;">
+            <div class="slide-frame">
+              <div class="slide-top">
+                <span>Tóm tắt văn bản</span>
+                <span>Trang <%= i + 1 %> / <%= summary.slides.length %></span>
+              </div>
+              <% if (sl.type === "cover") { %>
+                <div class="slide-cover">
+                  <div class="slide-cover-title"><%= sl.title %></div>
+                  <% if (sl.subtitle) { %><div class="slide-cover-sub"><%= sl.subtitle %></div><% } %>
+                  <% if (sl.meta) { %><div class="slide-cover-meta"><%= sl.meta %></div><% } %>
+                </div>
+              <% } else { %>
+                <% if (sl.title) { %>
+                  <div class="slide-title"><%= sl.title %><%= sl.cont ? " (tiếp)" : "" %></div>
+                <% } %>
+                <% if (sl.crumb) { %><div class="slide-crumb"><%= sl.crumb %></div><% } %>
+                <% if (sl.label) { %><div class="slide-label"><%= sl.label %></div><% } %>
+                <ul class="slide-list">
+                  <% sl.bullets.forEach(function(b) { %><li><span><%= b %></span></li><% }) %>
+                </ul>
               <% } %>
-            <% }) %>
-          </div>
-        <% } %>
+            </div>
+          </section>
+        <% }) %>
       </div>
     <% } %>
 
     <div id="fullContentView">
     <% if (doc.type === "word") { %>
-      <% textBlocks.forEach(function(html) { %>
-        <p class="tts-chunk"><%- html %></p>
-      <% }) %>
+      <% if (typeof summary !== "undefined" && summary && summary.full && summary.full.length > 0) { %>
+        <% summary.full.forEach(function(it) { %>
+          <% if (it.type === "section") { %>
+            <div class="fv-section fv-c<%= it.c %> tts-chunk">
+              <% if (it.label) { %><div class="fv-kicker"><%= it.label %></div><% } %>
+              <div class="fv-section-title"><%= it.text %></div>
+            </div>
+          <% } else if (it.type === "sub") { %>
+            <div class="fv-sub fv-sub--<%= it.level %> fv-c<%= it.c %> tts-chunk"><span class="fv-chip"><%= it.text %></span></div>
+          <% } else if (it.type === "item") { %>
+            <div class="fv-item fv-c<%= it.c %> tts-chunk">
+              <span class="fv-badge"><%= it.num %></span>
+              <span class="fv-item-text"><%- it.html %></span>
+            </div>
+          <% } else if (it.type === "bullet") { %>
+            <p class="fv-bullet fv-c<%= it.c %> tts-chunk"><%- it.html %></p>
+          <% } else if (it.type === "subject") { %>
+            <div class="fv-subject tts-chunk"><%- it.html %></div>
+          <% } else if (it.type === "meta") { %>
+            <div class="fv-meta"><%- it.html %></div>
+          <% } else { %>
+            <p class="fv-c<%= it.c %> tts-chunk"><%- it.html %></p>
+          <% } %>
+        <% }) %>
+      <% } else { %>
+        <% textBlocks.forEach(function(html) { %>
+          <p class="tts-chunk"><%- html %></p>
+        <% }) %>
+      <% } %>
     <% } %>
 
     <% if (doc.type === "pdf") { %>
@@ -125,11 +182,11 @@
         if (showingSummary) {
           summaryView.style.display = "none";
           fullView.style.display = "";
-          btn.textContent = "📝 Xem tóm tắt";
+          btn.textContent = "Xem tóm tắt";
         } else {
           summaryView.style.display = "";
           fullView.style.display = "none";
-          btn.textContent = "📄 Xem đầy đủ";
+          btn.textContent = "Xem đầy đủ";
         }
       });
     })();
@@ -313,5 +370,19 @@
   </script>
   <% } %>
   <%- include("partials/xung-danh") %>
+  <script>
+    (function () {
+      var bar = document.getElementById("rtProgressBar");
+      if (!bar) return;
+      function update() {
+        var h = document.documentElement;
+        var max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+      }
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      update();
+    })();
+  </script>
 </body>
 </html>
