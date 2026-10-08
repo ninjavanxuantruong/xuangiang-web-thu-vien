@@ -182,9 +182,7 @@ function pickBullet(text) {
 }
 
 export function buildSlides(blocks, docName) {
-  const items = (blocks || [])
-    .map((b) => ({ tag: b.tag, text: String(b.text || "").replace(/\s+/g, " ").trim() }))
-    .filter((b) => b.text && !SLIDE_NOISE_RE.test(b.text));
+  const items = normalizeBlocks(blocks);
 
   const slides = [];
 
@@ -288,9 +286,7 @@ function fvHighlight(text) {
 }
 
 export function buildFullView(blocks) {
-  const items = (blocks || [])
-    .map((b) => ({ tag: b.tag, text: String(b.text || "").replace(/\s+/g, " ").trim() }))
-    .filter((b) => b.text && !SLIDE_NOISE_RE.test(b.text));
+  const items = normalizeBlocks(blocks);
 
   let start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) === 1);
   if (start === -1) start = items.findIndex((b) => slideHeadingLevel(b.text, b.tag) >= 2);
@@ -301,7 +297,8 @@ export function buildFullView(blocks) {
   // Phần đầu văn bản (trước đề mục đầu tiên)
   items.slice(0, start).forEach((b) => {
     const t = b.text;
-    if (/^Về\s/i.test(t)) out.push({ type: "subject", c: 0, html: escHtml(t) });
+    if (b.tag === "table") out.push({ type: "table", c: 0, rows: b.rows });
+    else if (/^Về\s/i.test(t)) out.push({ type: "subject", c: 0, html: escHtml(t) });
     else if (t.length < 90) out.push({ type: "meta", c: 0, html: escHtml(t) });
     else out.push({ type: "p", c: 0, html: fvHighlight(t) });
   });
@@ -309,6 +306,10 @@ export function buildFullView(blocks) {
   let c = 0;
   let sectionCount = -1;
   items.slice(start).forEach((b) => {
+    if (b.tag === "table") {
+      out.push({ type: "table", c, rows: b.rows });
+      return;
+    }
     const level = slideHeadingLevel(b.text, b.tag);
     if (level === 1) {
       sectionCount += 1;
@@ -331,4 +332,16 @@ export function buildFullView(blocks) {
   });
 
   return out;
+}
+// Chuẩn hoá khối: đoạn văn -> { tag, text }; bảng -> { tag:"table", rows, text: "Bảng (n dòng): ..." }
+function normalizeBlocks(blocks) {
+  return (blocks || [])
+    .map((b) => {
+      if (b.tag === "table") {
+        const head = ((b.rows && b.rows[0]) || []).map((c) => c.text).filter(Boolean).join(" · ");
+        return { tag: "table", rows: b.rows || [], text: "Bảng (" + (b.rows || []).length + " dòng): " + head };
+      }
+      return { tag: b.tag, text: String(b.text || "").replace(/\s+/g, " ").trim() };
+    })
+    .filter((b) => b.text && !SLIDE_NOISE_RE.test(b.text));
 }
