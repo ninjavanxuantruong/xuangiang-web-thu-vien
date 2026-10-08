@@ -104,14 +104,25 @@
 
     <form method="POST" action="/gop-y">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <%
+        var hasId = (typeof identity !== "undefined" && identity);
+        var hasForm = (typeof form !== "undefined" && form);
+        var vHoTen = hasForm ? (form.hoTen || "") : (hasId ? identity.name : "");
+        var vDiaChi = hasForm ? (form.diaChi || "") : (hasId ? identity.chiBoName : "");
+        var vNoiDung = hasForm ? (form.noiDung || "") : "";
+      %>
+      <% if (hasId && !locked) { %>
+        <div class="feedback-note" style="margin:0 0 4px;">Họ tên và chi bộ đã được điền theo thông tin bạn xưng danh. Muốn gửi <strong>ẩn danh</strong> thì xoá trống hai ô này.</div>
+      <% } %>
+
       <label for="hoTen">Họ tên</label>
-      <input type="text" id="hoTen" name="hoTen" placeholder="Họ và tên" <%= locked ? "disabled" : "" %> />
+      <input type="text" id="hoTen" name="hoTen" placeholder="Họ và tên" value="<%= vHoTen %>" <%= locked ? "disabled" : "" %> />
 
       <label for="diaChi">Địa chỉ</label>
-      <input type="text" id="diaChi" name="diaChi" placeholder="Thôn/xóm, xã..." <%= locked ? "disabled" : "" %> />
+      <input type="text" id="diaChi" name="diaChi" placeholder="Thôn/xóm, xã..." value="<%= vDiaChi %>" <%= locked ? "disabled" : "" %> />
 
       <label for="noiDung">Nội dung góp ý *</label>
-      <textarea id="noiDung" name="noiDung" placeholder="Nhập ý kiến của bạn..." required <%= locked ? "disabled" : "" %>></textarea>
+      <textarea id="noiDung" name="noiDung" placeholder="Nhập ý kiến của bạn..." required <%= locked ? "disabled" : "" %>><%= vNoiDung %></textarea>
 
       <div class="captcha-row">
         <label style="margin:0;">Xác nhận: <%= a %> + <%= b %> = </label>
