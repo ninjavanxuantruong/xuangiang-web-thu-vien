@@ -456,6 +456,7 @@ function initReaderPlayer() {
     if (!el.innerText.trim()) return; // đoạn rỗng -> không có gì để đọc, không gắn nút
 
     const idx = filledIdx++;
+    if (el.tagName === "TR") return; // dòng bảng: vẫn được đọc nhưng không gắn nút ▶
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "tts-jump-btn" + (el.classList.contains("pdf-page") ? " tts-jump-btn--page" : "");
