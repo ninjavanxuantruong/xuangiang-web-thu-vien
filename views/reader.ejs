@@ -134,6 +134,22 @@
             </div>
           <% } else if (it.type === "bullet") { %>
             <p class="fv-bullet fv-c<%= it.c %> tts-chunk"><%- it.html %></p>
+          <% } else if (it.type === "table") { %>
+            <div class="fv-table-wrap fv-c<%= it.c %>">
+              <table class="fv-table">
+                <% it.rows.forEach(function(row, ri) {
+                     var isHead = (ri === 0 && it.rows.length > 1);
+                     var T = isHead ? "th" : "td";
+                     var isGroup = !isHead && row[0] && /^[IVX]{1,6}$/.test(row[0].text); %>
+                  <tr class="tts-chunk<%= isGroup ? ' fv-group' : '' %>">
+                    <% row.forEach(function(cell, ci) {
+                         var num = /^[\d.,\s%]+$/.test(cell.text); %>
+                      <<%- T %><%- cell.colspan > 1 ? ' colspan="' + cell.colspan + '"' : '' %><%- cell.rowspan > 1 ? ' rowspan="' + cell.rowspan + '"' : '' %><%- num ? ' class="fv-n"' : '' %>><%= cell.text %><% if (ci < row.length - 1) { %><span class="fv-sr">, </span><% } %></<%- T %>>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </table>
+            </div>
           <% } else if (it.type === "subject") { %>
             <div class="fv-subject tts-chunk"><%- it.html %></div>
           <% } else if (it.type === "meta") { %>
