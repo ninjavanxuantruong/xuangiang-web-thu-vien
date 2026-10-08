@@ -50,6 +50,20 @@
     table.nd-table th { background: var(--bg-page); font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
     table.nd-table tr:last-child td { border-bottom: none; }
     .section-title { margin-top: 28px; }
+    .rp-title { margin-top: 30px; font-weight: 700; font-size: 15px; }
+    .rp-note { font-size: 12px; color: var(--text-muted); margin: 4px 0 10px; }
+    .rp-wrap { overflow-x: auto; margin-bottom: 8px; }
+    table.rp-table { min-width: 640px; }
+    table.rp-table td.num, table.rp-table th.num { text-align: center; white-space: nowrap; }
+    table.rp-table tr.rp-total td { background: rgba(29, 158, 117, 0.12); font-weight: 700; }
+    .rp-names { font-size: 12px; line-height: 1.6; color: var(--text-primary); }
+    .rp-names .muted { color: var(--text-muted); }
+    .btn-copy {
+      background: #0F6E56 !important; color: #fff !important; border: none; border-radius: 999px;
+      padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+    .btn-copy.done { background: #534AB7 !important; }
+    .btn-copy.all { padding: 8px 18px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -85,15 +99,99 @@
       <button type="submit">Xem</button>
     </form>
 
-    <div class="stat-summary">
+    <div class="stat-summary" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+      <div class="stat-box">
+        <div class="number"><%= report.tong.dangKy %></div>
+        <div class="label">Người đã xưng danh</div>
+      </div>
+      <div class="stat-box">
+        <div class="number"><%= stats.soNguoi %></div>
+        <div class="label">Người đã đọc trong tháng</div>
+      </div>
+      <div class="stat-box">
+        <div class="number"><%= report.tong.pct %>%</div>
+        <div class="label">Tỷ lệ đã đọc / đã xưng danh</div>
+      </div>
       <div class="stat-box">
         <div class="number"><%= stats.totalLuot %></div>
         <div class="label">Lượt đọc trong tháng<% if (chiBoId) { %> (chi bộ đã chọn)<% } %></div>
       </div>
-      <div class="stat-box">
-        <div class="number"><%= stats.soNguoi %></div>
-        <div class="label">Số người đã đọc</div>
-      </div>
+    </div>
+
+    <% if (report.partial) { %>
+      <p class="rp-note">Đang lọc theo 1 chi bộ nên không có nút copy cả xã. Chọn "— Tất cả chi bộ —" rồi bấm Xem để copy số liệu cả xã.</p>
+    <% } %>
+
+    <!-- ====== BẢNG 1: XƯNG DANH ====== -->
+    <div class="rp-title">Bảng 1 — Thống kê xưng danh theo chi bộ</div>
+    <p class="rp-note">Bấm <b>Copy</b> ở từng chi bộ (hoặc <b>Copy cả xã</b>) rồi dán vào Zalo/Word để gửi đơn vị — dán ra là chữ + số đã xếp sẵn, đọc được ngay.</p>
+    <div class="rp-wrap">
+      <table class="nd-table rp-table">
+        <thead><tr><th>Chi bộ</th><th class="num">Số người</th><th>Cụ thể là những ai</th><th></th></tr></thead>
+        <tbody>
+          <% if (!report.partial) { %>
+            <tr class="rp-total">
+              <td>TOÀN XÃ (<%= report.tong.soChiBo %> chi bộ)</td>
+              <td class="num"><%= report.tong.dangKy %></td>
+              <td class="rp-names"><span class="muted">Cập nhật <%= report.ngay %></span></td>
+              <td><button type="button" class="btn-copy all" data-copy-key="xd:all">Copy cả xã</button></td>
+            </tr>
+          <% } %>
+          <% report.groups.forEach(function(g) { %>
+            <tr>
+              <td><%= g.name %></td>
+              <td class="num"><%= g.dangKy %></td>
+              <td class="rp-names">
+                <% if (g.dangKy === 0) { %><span class="muted">Chưa có ai xưng danh</span>
+                <% } else { %><%= g.members.map(function(m) { return m.name; }).join(", ") %><% } %>
+              </td>
+              <td><button type="button" class="btn-copy" data-copy-key="xd:<%= g.id %>">Copy</button></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ====== BẢNG 2: ĐỌC TRONG THÁNG ====== -->
+    <div class="rp-title">Bảng 2 — Tình hình đọc tài liệu tháng <%= report.label %></div>
+    <p class="rp-note">Trong ngoặc là số lượt đọc của từng người. Phần "Chưa đọc" giúp đơn vị biết ai cần nhắc.</p>
+    <div class="rp-wrap">
+      <table class="nd-table rp-table">
+        <thead>
+          <tr>
+            <th>Chi bộ</th><th class="num">Xưng danh</th><th class="num">Đã đọc</th>
+            <th class="num">Tỷ lệ</th><th class="num">Lượt đọc</th><th>Chi tiết</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!report.partial) { %>
+            <tr class="rp-total">
+              <td>TOÀN XÃ</td>
+              <td class="num"><%= report.tong.dangKy %></td>
+              <td class="num"><%= report.tong.daDoc %></td>
+              <td class="num"><%= report.tong.pct %>%</td>
+              <td class="num"><%= report.tong.luot %></td>
+              <td class="rp-names"><span class="muted">Cập nhật <%= report.ngay %></span></td>
+              <td><button type="button" class="btn-copy all" data-copy-key="doc:all">Copy cả xã</button></td>
+            </tr>
+          <% } %>
+          <% report.groups.forEach(function(g) { %>
+            <tr>
+              <td><%= g.name %></td>
+              <td class="num"><%= g.dangKy %></td>
+              <td class="num"><%= g.soDaDoc %></td>
+              <td class="num"><%= g.pct %>%</td>
+              <td class="num"><%= g.luot %></td>
+              <td class="rp-names">
+                <% if (g.daDoc.length) { %><%= g.daDoc.map(function(m) { return m.name + " (" + m.soLan + ")"; }).join(", ") %><% } %>
+                <% if (g.chuaDoc.length) { %><div class="muted">Chưa đọc: <%= g.chuaDoc.map(function(m) { return m.name; }).join(", ") %></div><% } %>
+                <% if (!g.daDoc.length && !g.chuaDoc.length) { %><span class="muted">Chưa có ai xưng danh</span><% } %>
+              </td>
+              <td><button type="button" class="btn-copy" data-copy-key="doc:<%= g.id %>">Copy</button></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
     </div>
 
 
@@ -151,11 +249,11 @@
       <p style="color:var(--text-muted);font-size:13px;">Chưa có ai đọc tài liệu trong khoảng này.</p>
     <% } else { %>
       <table class="nd-table">
-        <thead><tr><th>Họ tên</th><th>Chi bộ</th><th>Số tài liệu đã đọc</th><th></th></tr></thead>
+        <thead><tr><th>Họ tên</th><th>Chi bộ</th><th>Số tài liệu đã đọc</th><th>Số lần đọc</th><th></th></tr></thead>
         <tbody>
           <% stats.people.forEach(function(p) { %>
             <tr>
-              <td><%= p.name %></td><td><%= p.chiBoName %></td><td><%= p.soTaiLieu %></td>
+              <td><%= p.name %></td><td><%= p.chiBoName %></td><td><%= p.soTaiLieu %></td><td><%= p.soLan %></td>
               <td>
                 <form method="POST" action="/quanly/nguoi-doc/xoa" style="margin:0;"
                       onsubmit="return confirm('Xoá người này khỏi danh sách và xoá luôn lượt đọc của họ?');">
@@ -193,5 +291,46 @@
     <a class="admin-link" href="/quanly/thoat">· Thoát</a>
   </footer>
 
+  <script type="application/json" id="copyData"><%- JSON.stringify(report.copy).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029") %></script>
+  <script>
+    (function () {
+      var data = {};
+      try { data = JSON.parse(document.getElementById("copyData").textContent); } catch (e) {}
+
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+        }
+        return Promise.resolve(fallbackCopy(text));
+      }
+
+      document.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-copy-key]");
+        if (!btn) return;
+        var text = data[btn.getAttribute("data-copy-key")];
+        if (!text) return;
+        copyText(text).then(function (ok) {
+          var old = btn.getAttribute("data-label") || btn.textContent;
+          btn.setAttribute("data-label", old);
+          btn.textContent = ok ? "Đã copy!" : "Không copy được";
+          btn.classList.toggle("done", ok);
+          setTimeout(function () { btn.textContent = old; btn.classList.remove("done"); }, 1600);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
