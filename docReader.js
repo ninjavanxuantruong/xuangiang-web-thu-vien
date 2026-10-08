@@ -84,8 +84,31 @@ function decodeEntities(s) {
  * Tách HTML của mammoth thành các khối [{ tag, text }] — MỖI đoạn <p>,
  * tiêu đề <h1>-<h6>, mục <li> và mỗi dòng xuống hàng (<br>) là 1 khối riêng.
  */
-export function htmlToBlocks(html) {
-  const blocks = [];
+function parseTable(tableHtml) {
+  const rows = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let rm;
+  while ((rm = rowRe.exec(tableHtml)) !== null) {
+    const cells = [];
+    const cellRe = /<(td|th)([^>]*)>([\s\S]*?)<\/\1>/gi;
+    let cm;
+    while ((cm = cellRe.exec(rm[1])) !== null) {
+      const attrs = cm[2];
+      const span = (name) => {
+        const m = new RegExp(name + '="?(\\d+)"?', "i").exec(attrs);
+        return m ? Number(m[1]) : 1;
+      };
+      const text = decodeEntities(
+        cm[3].replace(/<br\s*\/?>/gi, " ").replace(/<\/p>/gi, " ").replace(/<[^>]+>/g, "")
+      ).replace(/\s+/g, " ").trim();
+      cells.push({ text, colspan: span("colspan"), rowspan: span("rowspan") });
+    }
+    if (cells.length) rows.push(cells);
+  }
+  return rows;
+}
+
+function pushTextBlocks(html, blocks) {
   const re = /<(p|h[1-6]|li)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
   let m;
   while ((m = re.exec(html)) !== null) {
@@ -99,6 +122,25 @@ export function htmlToBlocks(html) {
         if (text) blocks.push({ tag, text });
       });
   }
+}
+
+/**
+ * Tách HTML của mammoth thành các khối:
+ *   { tag: "p" | "h1".."h6" | "li", text }   — đoạn văn / tiêu đề / mục
+ *   { tag: "table", rows: [[{text, colspan, rowspan}, ...], ...] } — bảng
+ */
+export function htmlToBlocks(html) {
+  const blocks = [];
+  const tableRe = /<table[\s\S]*?<\/table>/gi;
+  let last = 0;
+  let tm;
+  while ((tm = tableRe.exec(html)) !== null) {
+    pushTextBlocks(html.slice(last, tm.index), blocks);
+    const rows = parseTable(tm[0]);
+    if (rows.length) blocks.push({ tag: "table", rows });
+    last = tm.index + tm[0].length;
+  }
+  pushTextBlocks(html.slice(last), blocks);
   return blocks;
 }
 
