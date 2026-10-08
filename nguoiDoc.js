@@ -280,15 +280,16 @@ export async function getReadStats({ month, chiBoId }) {
   for (const r of rows) {
     const pKey = `${r.chiBoId}|${r.name}`;
     if (!byPerson.has(pKey)) {
-      byPerson.set(pKey, { name: r.name, chiBoName: r.chiBoName, chiBoId: r.chiBoId, docs: new Set() });
+      byPerson.set(pKey, { name: r.name, chiBoName: r.chiBoName, chiBoId: r.chiBoId, docs: new Set(), luot: 0 });
     }
     byPerson.get(pKey).docs.add(r.docName);
+    byPerson.get(pKey).luot += 1;
 
     byDoc.set(r.docName, (byDoc.get(r.docName) || 0) + 1);
   }
 
   const people = [...byPerson.values()]
-    .map((p) => ({ name: p.name, chiBoName: p.chiBoName, chiBoId: p.chiBoId, soTaiLieu: p.docs.size }))
+    .map((p) => ({ name: p.name, chiBoName: p.chiBoName, chiBoId: p.chiBoId, soTaiLieu: p.docs.size, soLan: p.luot }))
     .sort((a, b) => b.soTaiLieu - a.soTaiLieu || a.name.localeCompare(b.name));
 
   const docs = [...byDoc.entries()]
@@ -316,7 +317,7 @@ export async function getRegisteredReaders() {
  * peopleStats = stats.people (số tài liệu đã đọc trong tháng đang xem), ghép theo chiBoId + tên.
  */
 export function buildRoster(chiBoList, readers, peopleStats = []) {
-  const reads = new Map(peopleStats.map((p) => [`${p.chiBoId}|${p.name}`, p.soTaiLieu]));
+  const reads = new Map(peopleStats.map((p) => [`${p.chiBoId}|${p.name}`, { soTaiLieu: p.soTaiLieu, soLan: p.soLan }]));
   const groups = new Map(chiBoList.map((cb) => [cb.id, { id: cb.id, name: cb.name, members: [] }]));
 
   for (const r of readers) {
@@ -327,7 +328,8 @@ export function buildRoster(chiBoList, readers, peopleStats = []) {
       name: r.name,
       chiBoId: r.chiBoId,
       createdAt: r.createdAt || "",
-      soTaiLieu: reads.get(`${r.chiBoId}|${r.name}`) || 0
+      soTaiLieu: (reads.get(`${r.chiBoId}|${r.name}`) || {}).soTaiLieu || 0,
+      soLan: (reads.get(`${r.chiBoId}|${r.name}`) || {}).soLan || 0
     });
   }
 
@@ -388,4 +390,89 @@ export async function getMyReads(identity) {
     byDoc.set(r.docName, cur);
   }
   return [...byDoc.values()].sort((a, b) => b.lanCuoi.localeCompare(a.lanCuoi));
+}
+
+
+// ====================== BÁO CÁO THEO CHI BỘ (để copy gửi các đơn vị) ======================
+function fmtThang(thang) {
+  const [y, m] = String(thang || "").split("-");
+  return y && m ? `${m}/${y}` : String(thang || "");
+}
+
+function homNay() {
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric"
+  }).format(new Date());
+}
+
+/**
+ * Dựng số liệu + văn bản "dán được" cho từng chi bộ và cho cả xã.
+ *   roster : kết quả buildRoster(...)  (mỗi thành viên có name, soLan, soTaiLieu)
+ *   thang  : "2026-10"
+ *   chiBoId: nếu đang lọc 1 chi bộ thì chỉ dựng chi bộ đó (và đánh dấu partial = true)
+ */
+export function buildChiBoReport(roster, thang, chiBoId = "") {
+  const label = fmtThang(thang);
+  const ngay = homNay();
+  const list = (roster || []).filter((g) => !chiBoId || g.id === chiBoId);
+
+  const groups = list.map((g) => {
+    const members = g.members || [];
+    const daDoc = members.filter((m) => m.soLan > 0).sort((a, b) => b.soLan - a.soLan || a.name.localeCompare(b.name, "vi"));
+    const chuaDoc = members.filter((m) => m.soLan === 0);
+    const dangKy = members.length;
+    const luot = members.reduce((n, m) => n + m.soLan, 0);
+    const pct = dangKy ? Math.round((daDoc.length * 100) / dangKy) : 0;
+
+    const textXungDanh = [
+      `${g.name} — số người xưng danh: ${dangKy}`,
+      ...(dangKy ? members.map((m, i) => `${i + 1}. ${m.name}`) : ["(chưa có ai xưng danh)"])
+    ].join("\n");
+
+    const textDoc = [
+      `${g.name} — tình hình đọc tài liệu tháng ${label}`,
+      `Đã đọc: ${daDoc.length}/${dangKy} người (${pct}%) — tổng ${luot} lượt đọc`,
+      ...daDoc.map((m, i) => `${i + 1}. ${m.name} — ${m.soLan} lượt, ${m.soTaiLieu} tài liệu`),
+      ...(chuaDoc.length ? [`Chưa đọc (${chuaDoc.length}): ${chuaDoc.map((m) => m.name).join(", ")}`] : [])
+    ].join("\n");
+
+    return { id: g.id, name: g.name, dangKy, daDoc, chuaDoc, soDaDoc: daDoc.length, luot, pct, members, textXungDanh, textDoc };
+  });
+
+  const tongDangKy = groups.reduce((n, g) => n + g.dangKy, 0);
+  const tongDaDoc = groups.reduce((n, g) => n + g.soDaDoc, 0);
+  const tongLuot = groups.reduce((n, g) => n + g.luot, 0);
+  const tongPct = tongDangKy ? Math.round((tongDaDoc * 100) / tongDangKy) : 0;
+
+  const textXungDanhAll = [
+    "THỐNG KÊ XƯNG DANH — TOÀN XÃ XUÂN GIANG",
+    `Cập nhật: ${ngay}`,
+    `Tổng: ${tongDangKy} người xưng danh / ${groups.length} chi bộ`,
+    "",
+    ...groups.map((g, i) =>
+      [`${i + 1}. ${g.name}: ${g.dangKy} người`, ...(g.dangKy ? g.members.map((m) => `   - ${m.name}`) : ["   (chưa có ai xưng danh)"])].join("\n")
+    )
+  ].join("\n");
+
+  const textDocAll = [
+    `THỐNG KÊ ĐỌC TÀI LIỆU THÁNG ${label} — TOÀN XÃ XUÂN GIANG`,
+    `Cập nhật: ${ngay}`,
+    `Đã xưng danh: ${tongDangKy} người | Đã đọc: ${tongDaDoc} người (${tongPct}%) | Tổng lượt đọc: ${tongLuot}`,
+    "",
+    ...groups.map((g, i) =>
+      [
+        `${i + 1}. ${g.name}: đã đọc ${g.soDaDoc}/${g.dangKy} người (${g.pct}%), ${g.luot} lượt`,
+        ...g.daDoc.map((m) => `   - ${m.name}: ${m.soLan} lượt, ${m.soTaiLieu} tài liệu`),
+        ...(g.chuaDoc.length ? [`   Chưa đọc: ${g.chuaDoc.map((m) => m.name).join(", ")}`] : [])
+      ].join("\n")
+    )
+  ].join("\n");
+
+  const copy = { "xd:all": textXungDanhAll, "doc:all": textDocAll };
+  groups.forEach((g) => { copy["xd:" + g.id] = g.textXungDanh; copy["doc:" + g.id] = g.textDoc; });
+
+  return {
+    label, ngay, partial: Boolean(chiBoId), groups, copy,
+    tong: { dangKy: tongDangKy, daDoc: tongDaDoc, luot: tongLuot, pct: tongPct, soChiBo: groups.length }
+  };
 }
