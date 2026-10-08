@@ -1570,3 +1570,17 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   .reader-toolbar .rt-btn { padding: 9px 16px; font-size: 13px; }
   .fv-item { padding-right: 38px; }
 }
+/* ===== Bảng trong bản xem đầy đủ ===== */
+.fv-table-wrap { overflow-x: auto; margin: 16px 0 24px; border: 1px solid var(--border-color); border-radius: 8px; }
+.fv-table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .85em; line-height: 1.5; }
+.fv-table th, .fv-table td {
+  padding: 8px 10px; text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color);
+}
+.fv-table th:last-child, .fv-table td:last-child { border-right: none; }
+.fv-table tr:last-child td { border-bottom: none; }
+.fv-table th { background: var(--fv-solid); color: #fff; font-weight: 600; }
+.fv-table td.fv-n { text-align: center; white-space: nowrap; }
+.fv-table tr.fv-group td { background: var(--fv-bg); font-weight: 700; }
+/* Dấu phẩy ẩn giữa các ô, để bộ đọc ngắt nghỉ tự nhiên khi đọc từng dòng bảng */
+.fv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
