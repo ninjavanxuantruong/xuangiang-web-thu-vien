@@ -35,7 +35,7 @@ import { listWordCache, deleteWordCache } from "./wordCache.js";
 import { getLatestPodcast, getCachedPodcastPath, getPodcastTrackFile } from "./podcast.js";
 import { getRadioLatest, serveLiveHls } from "./radio.js";
 import {
-  getChiBoList, getChiBoListCached, getIdentity, setIdentity, registerReader,
+  getChiBoList, getChiBoListCached, getIdentity, setIdentity, registerReader, buildChiBoReport,
   recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader, getMyReads
 } from "./nguoiDoc.js";
 
@@ -1063,11 +1063,13 @@ app.get("/gop-y", async (req, res) => {
   } catch (err) {
     console.error("GET /gop-y: lỗi lấy danh sách khảo sát -", err.message);
   }
-  res.render("gop-y", { a, b, error: null, success: false, locked, surveys });
+  res.render("gop-y", { a, b, error: null, success: false, locked, surveys, identity: getIdentity(req), form: null });
 });
 
   app.post("/gop-y", csrfCheck, async (req, res) => {
   const { hoTen, diaChi, noiDung, dapAn } = req.body;
+    res.locals.identity = getIdentity(req);
+    res.locals.form = { hoTen, diaChi, noiDung };
 
   let surveys = [];
   try {
@@ -1106,7 +1108,8 @@ app.get("/gop-y", async (req, res) => {
     req.session.gopYDaGuiNgay = todayStr(); // khoá gửi thêm trong hôm nay
 
     const { a, b } = newCaptcha(req);
-    res.render("gop-y", { a, b, error: null, success: true, locked: true, surveys });
+    res.render("gop-y", { a, b, error: null, success: true, locked: true, surveys, form: null });
+    
   } catch (err) {
     console.error("POST /gop-y error:", err);
     const { a, b } = newCaptcha(req);
@@ -1223,7 +1226,8 @@ app.get("/quanly/nguoi-doc", requireAdmin, async (req, res) => {
       getChiBoList(), getReadStats({ month: thang, chiBoId }), getRegisteredReaders()
     ]);
     const roster = buildRoster(chiBoList, readers, stats.people);
-    res.render("admin-nguoidoc", { thang, chiBoId, chiBoList, stats, roster });
+    const report = buildChiBoReport(roster, thang, chiBoId);
+    res.render("admin-nguoidoc", { thang, chiBoId, chiBoList, stats, roster, report });
   } catch (err) {
     console.error("GET /quanly/nguoi-doc error:", err);
     res.status(500).send("Không tải được thống kê");
