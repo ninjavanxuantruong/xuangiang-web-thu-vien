@@ -7,16 +7,46 @@
   <link rel="stylesheet" href="/public/style.css" />
   <style>
     .me-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 20px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-    .me-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--color-brand, #a52424); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
+    .me-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--color-brand, #a52424); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; flex: none; }
     .me-name { font-size: 20px; font-weight: 700; }
     .me-sub { color: var(--text-muted, #777); font-size: 14px; margin-top: 2px; }
+    .me-role { display: inline-block; background: #534AB7; color: #fff; border-radius: 999px; padding: 2px 12px; font-size: 12px; font-weight: 600; margin-top: 6px; }
     .me-stat { margin-left: auto; text-align: center; }
     .me-stat b { display: block; font-size: 28px; color: var(--color-brand, #a52424); }
+    .pt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .pt-box { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 14px; text-align: center; }
+    .pt-box b { display: block; font-size: 26px; color: var(--color-brand, #a52424); line-height: 1.2; }
+    .pt-box span { font-size: 12px; color: var(--text-muted, #777); }
+    .pt-note { font-size: 12px; color: var(--text-muted, #777); margin: 6px 0 16px; line-height: 1.5; }
+    .cb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .cb-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 14px 16px; }
+    .cb-card h4 { margin: 0 0 8px; font-size: 14px; color: var(--text-muted, #777); font-weight: 600; }
+    .cb-line { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 14px; border-bottom: 1px dashed var(--border, #e5d5d5); }
+    .cb-line:last-child { border-bottom: none; }
+    .cb-line b { color: var(--text-primary, #1c1c1c); }
+    .cb-rank { display: inline-block; background: #0F6E56; color: #fff; border-radius: 999px; padding: 2px 12px; font-weight: 700; }
+    .btn-cb { display: inline-block; background: #534AB7; color: #fff; border-radius: 999px; padding: 10px 20px; font-weight: 600; font-size: 14px; text-decoration: none; }
     .read-list { list-style: none; padding: 0; margin: 0; }
-    .read-item { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--border, #e5d5d5); border-radius: 10px; margin-bottom: 8px; background: var(--card-bg, #fff); }
+    .read-item { padding: 12px 14px; border: 1px solid var(--border, #e5d5d5); border-radius: 10px; margin-bottom: 8px; background: var(--card-bg, #fff); }
+    .read-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
     .read-item a { font-weight: 600; color: inherit; flex: 1; }
     .read-item a:hover { color: var(--color-brand, #a52424); }
     .read-meta { font-size: 12px; color: var(--text-muted, #777); white-space: nowrap; text-align: right; }
+    .read-pts { margin-top: 6px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tag { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+    .tag.ok { background: rgba(29, 158, 117, 0.15); color: #0F6E56; }
+    .tag.warn { background: rgba(186, 117, 23, 0.16); color: #854F0B; }
+    .tag.none { background: rgba(127, 127, 127, 0.15); color: var(--text-muted, #777); }
+    .tag.total { background: #0F6E56; color: #fff; }
+    .tbl-wrap { overflow-x: auto; }
+    table.cb-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+    table.cb-table th, table.cb-table td { padding: 8px 10px; border-bottom: 1px solid var(--border, #e5d5d5); text-align: left; vertical-align: top; }
+    table.cb-table th { background: rgba(127, 127, 127, 0.12); font-weight: 600; }
+    table.cb-table td.num, table.cb-table th.num { text-align: center; white-space: nowrap; }
+    table.cb-table tr.dim td { color: var(--text-muted, #777); }
+    .ky-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }
+    .ky-form input, .ky-form button, .ky-form a { font-size: 14px; border-radius: 8px; padding: 7px 12px; border: 1px solid var(--border, #ccc); background: var(--card-bg, #fff); color: inherit; text-decoration: none; cursor: pointer; }
+    .ky-form button { background: #0F6E56; color: #fff; border-color: #0F6E56; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -34,15 +64,47 @@
     <button class="account-btn" data-toggle-theme>🌙 Tối</button>
   </header>
 
+<% var f = function (n) { return (Math.round(n * 100) / 100).toString().replace(".", ","); }; %>
   <div class="section">
     <div class="me-card">
       <div class="me-avatar">👤</div>
       <div>
         <div class="me-name"><%= me.name %></div>
         <div class="me-sub">Chi bộ: <%= me.chiBoName || me.chiBoId %></div>
+        <% if (chucVu) { %><div class="me-role"><%= chucVu %></div><% } %>
       </div>
-      <div class="me-stat"><b><%= reads.length %></b><span class="me-sub">văn bản đã đọc</span></div>
+      <div class="me-stat"><b><%= diem.tatCa %></b><span class="me-sub">điểm tích lũy</span></div>
     </div>
+
+    <% if (chucVu) { %>
+      <p style="margin:0 0 20px;"><a class="btn-cb" href="/toi/chi-bo">Xem thống kê chi bộ của tôi →</a></p>
+    <% } %>
+
+    <div class="section-title">Điểm của tôi</div>
+    <div class="pt-grid">
+      <div class="pt-box"><b><%= diem.thang %></b><span>điểm <%= kyThang %></span></div>
+      <div class="pt-box"><b><%= diem.nam %></b><span>điểm <%= kyNam %></span></div>
+      <div class="pt-box"><b><%= diem.tatCa %></b><span>tổng điểm từ trước đến nay</span></div>
+    </div>
+    <p class="pt-note">Điểm nghiên cứu: ở lại trang ít nhất 5 giây và đọc hết văn bản (dưới 5 trang 2 điểm, 5–15 trang 3 điểm, trên 15 trang 4 điểm). Mỗi câu trắc nghiệm đúng thêm 1 điểm. Mỗi văn bản chỉ được tính một lần.</p>
+
+    <% if (chiBo.thang || chiBo.nam) { %>
+      <div class="section-title">Chi bộ của tôi</div>
+      <div class="cb-grid">
+        <% [{ t: kyThang, c: chiBo.thang }, { t: kyNam, c: chiBo.nam }].forEach(function (k) { if (!k.c) return; %>
+          <div class="cb-card">
+            <h4><%= k.t %></h4>
+            <div class="cb-line"><span>Điểm chi bộ</span><b><%= f(k.c.diemChiBo) %></b></div>
+            <div class="cb-line"><span>Điểm trung bình mỗi đảng viên</span><b><%= k.c.tb == null ? "—" : f(k.c.tb) %></b></div>
+            <div class="cb-line"><span>Xếp hạng chi bộ</span>
+              <% if (k.c.hang) { %><span class="cb-rank"><%= k.c.hang %> / <%= k.c.soXepHang %></span><% } else { %><span class="me-sub">Chưa xếp hạng</span><% } %>
+            </div>
+            <div class="cb-line"><span>Đã xưng danh / Số đảng viên</span><b><%= k.c.soXungDanh %> / <%= k.c.soDangVien || "?" %></b></div>
+          </div>
+        <% }) %>
+      </div>
+      <p class="pt-note">Điểm chi bộ là tổng điểm các đảng viên đã được đối chiếu với danh sách đảng viên. Điểm trung bình = điểm chi bộ chia cho số đảng viên của chi bộ, nên đồng chí nào chưa xưng danh hoặc chưa đọc sẽ kéo điểm trung bình xuống. Chi bộ chưa có số đảng viên thì chưa được xếp hạng.</p>
+    <% } %>
 
     <div class="section-title">Các văn bản đã đọc</div>
 
@@ -52,10 +114,25 @@
       <ul class="read-list">
         <% reads.forEach(function(r) { %>
           <li class="read-item">
-            <a href="/doc/<%= encodeURIComponent(r.docName) %>">📄 <%= r.docName %></a>
-            <div class="read-meta">
-              <%= r.lanCuoi ? new Date(r.lanCuoi).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) : "" %>
-              <% if (r.soLan > 1) { %><br>đọc <%= r.soLan %> ngày<% } %>
+            <div class="read-top">
+              <a href="/doc/<%= encodeURIComponent(r.docName) %>">📄 <%= r.docName %></a>
+              <div class="read-meta">
+                <%= r.lanCuoi ? new Date(r.lanCuoi).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) : "" %>
+                <% if (r.soLan > 1) { %><br>đọc <%= r.soLan %> ngày<% } %>
+              </div>
+            </div>
+            <div class="read-pts">
+              <% if (!r.diem.hoanThanh) { %>
+                <span class="tag none">Chưa nghiên cứu xong · chưa có điểm</span>
+              <% } else { %>
+                <span class="tag ok">Nghiên cứu +<%= r.diem.nc %></span>
+                <% if (r.diem.daLamBai) { %>
+                  <span class="tag ok">Trắc nghiệm <%= r.diem.tn %><%= r.diem.tongCau ? "/" + r.diem.tongCau : "" %></span>
+                <% } else { %>
+                  <span class="tag warn">Chưa làm trắc nghiệm</span>
+                <% } %>
+                <span class="tag total">Tổng <%= r.diem.tong %> điểm</span>
+              <% } %>
             </div>
           </li>
         <% }) %>
@@ -66,4 +143,3 @@
   <script src="/public/main.js"></script>
 </body>
 </html>
-
