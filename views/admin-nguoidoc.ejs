@@ -99,6 +99,28 @@
       <button type="submit">Xem</button>
     </form>
 
+    <% if (typeof msg !== "undefined" && msg) { %>
+      <div style="background:#eef7ee;border:1px solid #b9dcb9;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13px;"><%= msg %></div>
+    <% } %>
+
+    <details style="margin:14px 0;">
+      <summary style="cursor:pointer;font-weight:600;font-size:14px;">✏️ Đổi tên chi bộ</summary>
+      <form method="POST" action="/quanly/chi-bo/doi-ten" class="toolbar-row" style="margin-top:10px;"
+            onsubmit="return confirm('Đổi tên chi bộ này? Toàn bộ người đã đăng ký và lượt đọc của chi bộ sẽ chuyển sang tên mới.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <select name="chiBoId" required>
+          <option value="">— Chi bộ cần đổi tên —</option>
+          <% chiBoList.forEach(function(cb) { %><option value="<%= cb.id %>"><%= cb.name %></option><% }) %>
+        </select>
+        <input type="text" name="tenMoi" placeholder="Tên mới" maxlength="150" required />
+        <button type="submit">Đổi tên</button>
+      </form>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+        Người đã đăng ký và lượt đọc của chi bộ chuyển sang tên mới; máy của họ tự nhận tên mới, không phải xưng danh lại.
+        Nếu tên mới trùng một chi bộ đang có thì hai chi bộ được <b>gộp</b>. Sau khi đổi, hãy sửa cùng tên mới trong sheet chi bộ và cột D của sheet đảng viên.
+      </p>
+    </details>
+
     <div class="stat-summary" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
       <div class="stat-box">
         <div class="number"><%= report.tong.dangKy %></div>
