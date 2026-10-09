@@ -1517,7 +1517,21 @@ body.is-autoplaying .section { scroll-margin-top: 38px; }
   background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);
   border-radius: 6px; padding: 5px 9px; font-size: 12px; text-decoration: none; cursor: pointer;
 }
-.rt-home { font-size: 12px; color: var(--text-muted); }
+.reader-toolbar .rt-home {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1.5px solid var(--text-primary);
+  border-radius: 999px;
+  padding: 6px 14px;
+  text-decoration: none;
+  background: transparent;
+  transition: background .15s ease, color .15s ease;
+}
+.reader-toolbar .rt-home:hover {
+  background: var(--text-primary);
+  color: var(--bg-page, #fff);
+}
 .rt-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
 #rtProgressBar { height: 100%; width: 0; background: #1D9E75; transition: width .1s linear; }
 
