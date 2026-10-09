@@ -2,6 +2,7 @@ import { fetchSheetRaw } from "./sheets.js";
 import { interleaveImages } from "./docReader.js";
 import { getWordParagraphsCached } from "./wordCache.js";
 import { extractImagesFromPage } from "./newsFinder.js";
+import { layIdThuMucDrive, layAnhTrongThuMuc } from "./driveFolder.js";
 
 /**
  * Mục Danh nhân & Địa điểm dùng 1 Google Sheet RIÊNG (NHANVAT_SHEET_URL),
@@ -10,12 +11,16 @@ import { extractImagesFromPage } from "./newsFinder.js";
  *   Cột A -> tên danh nhân/địa điểm
  *   Cột B -> thông tin (đoạn giới thiệu mở đầu bài viết)
  *   Cột C -> link văn bản Word (nội dung chính)
- *   Cột D -> ẢNH ĐẠI DIỆN: link chia sẻ file ảnh trên Google Drive, dạng
- *            https://drive.google.com/file/d/<ID>/view?usp=sharing
- *            (file phải để chế độ "Bất kỳ ai có đường liên kết")
- *   Cột E trở đi -> mỗi cột là 1 link bài viết/trang có ảnh về nhân vật đó
- *            (không giới hạn số cột). Hệ thống tự lấy ảnh trong trang, gộp
- *            thành kho ảnh, xáo ngẫu nhiên rồi chèn xen giữa các đoạn văn.
+ *   Cột D -> ẢNH ĐẠI DIỆN. Nhận 1 trong các dạng:
+ *            - link file ảnh trên Drive: https://drive.google.com/file/d/<ID>/view?usp=sharing
+ *            - link THƯ MỤC Drive: https://drive.google.com/drive/folders/<ID>?usp=sharing
+ *              (ảnh đầu tiên theo tên file là ảnh đại diện, TẤT CẢ ảnh trong thư mục vào kho ảnh bài)
+ *            - (kiểu cũ) link ảnh trực tiếp / link trang web
+ *            Thư mục/file phải để chế độ "Bất kỳ ai có đường liên kết".
+ *   Cột E trở đi -> mỗi cột là 1 link, nhận: link THƯ MỤC Drive (lấy hết ảnh trong thư mục),
+ *            link file ảnh Drive, link ảnh trực tiếp, hoặc link bài viết/trang web (tự bóc ảnh
+ *            trong trang). Không giới hạn số cột. Tất cả gộp thành kho ảnh, xáo ngẫu nhiên rồi chèn
+ *            xen giữa các đoạn văn.
  *
  * Ảnh ở cột D cũng được đưa vào kho ảnh của bài viết.
  */
@@ -73,6 +78,13 @@ const cacheAvatar = new Map(); // link cột D -> { url, time }
 async function layAnhDaiDien(linkCotD) {
   if (!linkCotD) return null;
 
+  // 0) Link THƯ MỤC Drive -> ảnh đầu tiên (theo tên file) làm ảnh đại diện.
+  const folderId = layIdThuMucDrive(linkCotD);
+  if (folderId) {
+    const files = await layAnhTrongThuMuc(folderId);
+    return files.length ? linkDriveThanhAnh(files[0].id) : null;
+  }
+
   // 1) Chuẩn mới: link Drive -> không cần gọi mạng, chỉ đổi link.
   const driveId = layIdDrive(linkCotD);
   if (driveId) return linkDriveThanhAnh(driveId);
@@ -91,6 +103,24 @@ async function layAnhDaiDien(linkCotD) {
 
   cacheAvatar.set(linkCotD, { url, time: Date.now() });
   return url;
+}
+
+// Lấy TẤT CẢ ảnh từ 1 link bất kỳ: thư mục Drive / file ảnh Drive / ảnh trực tiếp / trang web.
+// Không bao giờ ném lỗi (lỗi -> mảng rỗng) để 1 link hỏng không làm mất cả bài.
+async function layAnhTuLink(link) {
+  if (!link) return [];
+  try {
+    const folderId = layIdThuMucDrive(link);
+    if (folderId) {
+      const files = await layAnhTrongThuMuc(folderId);
+      return files.map((f) => linkDriveThanhAnh(f.id));
+    }
+    const driveId = layIdDrive(link);
+    if (driveId) return [linkDriveThanhAnh(driveId)];
+    return await extractImagesFromPage(link);
+  } catch {
+    return [];
+  }
 }
 
 export async function getNhanVatList() {
@@ -142,13 +172,12 @@ export async function buildNhanVatArticle(name) {
 
   const paragraphs = await getWordParagraphsCached(item.wordUrl);
 
-  // Ảnh từ các link cột E+ (bóc trong trang), lấy song song.
-  const imageArrays = await Promise.all(
-    item.imageLinks.map((link) => extractImagesFromPage(link).catch(() => []))
-  );
+  // Ảnh từ cột D (nếu là thư mục: lấy cả thư mục) và các link cột E+ (thư mục Drive / file ảnh /
+  // ảnh trực tiếp / bóc trong trang web), lấy song song.
+  const imageArrays = await Promise.all([item.avatarLink, ...item.imageLinks].map(layAnhTuLink));
 
-  // Ảnh đại diện cột D cũng cho vào kho ảnh của bài.
-  const images = [...item.images, ...imageArrays.flat()];
+  // Ảnh đại diện + mọi ảnh tìm được, bỏ ảnh trùng, gộp thành kho ảnh của bài.
+  const images = [...new Set([...item.images, ...imageArrays.flat()])];
 
   const blocks = interleaveImages(paragraphs, images);
 
