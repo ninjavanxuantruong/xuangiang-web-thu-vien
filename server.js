@@ -23,10 +23,11 @@ import { getWordDoc, stripHtml } from "./docReader.js";
 import { getNhanVatList, buildNhanVatArticle } from "./nhanvat.js";
 import { getFallbackSvgMarkup } from "./fallback-images.js";
 import { summarizeDocument, buildSlides, buildFullView } from "./summarizer.js";
+import { prepareHocTap, registerDiemRoutes, getTrangToi } from "./diem.js";
 
 import { getMosaicZones } from "./mosaicFeed.js";
 import { getWorldNewsFast, getWorldNewsById } from "./worldNews.js";
-
+import { registerDangVienRoutes } from "./dangVien.js";
 import { getLichTuan } from "./lichTuan.js";
 import { csrfCookie, csrfCheck } from "./csrf.js";
 import { clearRamCache } from "./firestoreCache.js";
@@ -36,7 +37,7 @@ import { getLatestPodcast, getCachedPodcastPath, getPodcastTrackFile } from "./p
 import { getRadioLatest, serveLiveHls } from "./radio.js";
 import {
   getChiBoList, getChiBoListCached, getIdentity, setIdentity, registerReader, buildChiBoReport,
-  recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader, getMyReads
+  recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader, getMyReads, renameChiBo
 } from "./nguoiDoc.js";
 
 // ====== Chống chết tiến trình vì 1 lỗi lẻ ======
@@ -588,7 +589,8 @@ app.get("/doc/:name", async (req, res) => {
       const summary = summarizeDocument(textBlocks.map(stripHtml));
       summary.slides = buildSlides(blocks, doc.name);
       summary.full = buildFullView(blocks);
-      return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary });
+      const hocTap = await prepareHocTap(req, doc.name, blocks, summary.slides);
+      return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary, hocTap });
     }
 
     // 3) File tải lên Google Drive -> chưa biết Word hay PDF, tự dò bằng Content-Type
@@ -601,7 +603,8 @@ app.get("/doc/:name", async (req, res) => {
       const summary = summarizeDocument(textBlocks.map(stripHtml));
       summary.slides = buildSlides(blocks, doc.name);
       summary.full = buildFullView(blocks);
-      return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary });
+      const hocTap = await prepareHocTap(req, doc.name, blocks, summary.slides);
+      return res.render("reader", { doc: { name: doc.name, type: "word" }, textBlocks, summary, hocTap });
     }
 
     // Mặc định coi là PDF — hiển thị cuộn nhiều trang liên tiếp (không lật trang)
@@ -1109,7 +1112,7 @@ app.get("/gop-y", async (req, res) => {
 
     const { a, b } = newCaptcha(req);
     res.render("gop-y", { a, b, error: null, success: true, locked: true, surveys, form: null });
-    
+
   } catch (err) {
     console.error("POST /gop-y error:", err);
     const { a, b } = newCaptcha(req);
@@ -1118,17 +1121,8 @@ app.get("/gop-y", async (req, res) => {
 });
 
 
-app.post("/xung-danh", csrfCheck, async (req, res) => {
-  try {
-    const { name, chiBoId, chiBoName } = req.body;
-    const ok = setIdentity(req, res, { name, chiBoId, chiBoName });
-    if (!ok) return res.status(400).json({ error: "Thiếu tên hoặc chi bộ" });
-    await registerReader({ name, chiBoId, chiBoName }).catch((e) => console.warn("Ghi sổ đăng ký lỗi:", e.message));
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: "Lỗi máy chủ" });
-  }
-});
+registerDangVienRoutes(app, csrfCheck);
+registerDiemRoutes(app);
 // ====== Quản lý Góp ý (Ban Xây dựng Đảng) ======
 app.get("/quanly/gop-y", requireAdmin, async (req, res) => {
   const thang = req.query.thang || new Date().toISOString().slice(0, 7);
@@ -1208,11 +1202,14 @@ app.get("/quanly/gop-y/xuat", requireAdmin, async (req, res) => {
 });
 // ====== Khu vực của tôi: tên + chi bộ đã đăng ký + các văn bản đã đọc ======
 app.get("/toi", async (req, res) => {
-  const me = getIdentity(req);
-  if (!me) return res.redirect("/");
-  let reads = [];
-  try { reads = await getMyReads(me); } catch (e) { console.warn("GET /toi lỗi:", e.message); }
-  res.render("toi", { me, reads });
+  try {
+    const data = await getTrangToi(req);
+    if (!data) return res.redirect("/");
+    res.render("toi", data);
+  } catch (e) {
+    console.warn("GET /toi lỗi:", e.message);
+    res.status(500).send("Không tải được trang của bạn");
+  }
 });
 app.get("/api/chi-bo", async (req, res) => {
   try { res.json(await getChiBoListCached()); } catch { res.json([]); }
@@ -1227,10 +1224,21 @@ app.get("/quanly/nguoi-doc", requireAdmin, async (req, res) => {
     ]);
     const roster = buildRoster(chiBoList, readers, stats.people);
     const report = buildChiBoReport(roster, thang, chiBoId);
-    res.render("admin-nguoidoc", { thang, chiBoId, chiBoList, stats, roster, report });
+    res.render("admin-nguoidoc", { thang, chiBoId, chiBoList, stats, roster, report, msg: String(req.query.msg || "").slice(0, 300) });
   } catch (err) {
     console.error("GET /quanly/nguoi-doc error:", err);
     res.status(500).send("Không tải được thống kê");
+  }
+});
+
+app.post("/quanly/chi-bo/doi-ten", requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const r = await renameChiBo({ oldId: req.body.chiBoId, newName: req.body.tenMoi });
+    const msg = `Đã đổi tên chi bộ thành "${r.newName}": chuyển ${r.soNguoi} người và ${r.soLuot} lượt đọc${r.gop ? " (gộp vào chi bộ đã có)" : ""}. Nhớ sửa tên này trong cả sheet chi bộ và cột D sheet đảng viên.`;
+    res.redirect("/quanly/nguoi-doc?msg=" + encodeURIComponent(msg));
+  } catch (err) {
+    console.error("POST /quanly/chi-bo/doi-ten error:", err);
+    res.redirect("/quanly/nguoi-doc?msg=" + encodeURIComponent("Không đổi được tên chi bộ: " + err.message));
   }
 });
 
