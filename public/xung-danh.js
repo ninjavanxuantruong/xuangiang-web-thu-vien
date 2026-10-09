@@ -9,6 +9,10 @@
 //   window.__XUNG_DANH_CAN_HOI__  (boolean) — true nếu chưa xưng danh (hoặc đã bị admin xoá)
 //   window.__CSRF_TOKEN__         (chuỗi)
 //   window.__XUNG_DANH_TEN__      (chuỗi)  — họ tên đã xưng danh ("" nếu chưa) — để chào khi vào trang
+// Đối chiếu danh sách đảng viên (server: dangVien.js):
+//   - Lúc đăng ký: tên gõ gần giống đảng viên trong ĐÚNG chi bộ đã chọn -> hỏi "có phải đồng chí X - chức vụ không".
+//   - Người đã xưng danh từ trước (tên sai) cũng được hỏi 1 lần/phiên khi vào trang.
+//   - Bấm "Không phải" 2 lần trên cùng 1 máy thì server không gợi ý nữa.
 // Tuỳ chọn:
 //   window.__CHI_BO_LIST__        ([{id,name}]) — trang nào không nhúng sẵn thì popup tự tải từ /api/chi-bo
 //   window.__TOI_URL__            (chuỗi)       — địa chỉ trang "khu vực của tôi" NẾU đã làm. Chưa đặt thì
@@ -122,6 +126,99 @@
     }, GREETING_HOLD_MS);
   }
 
+  // ---------- Gọi server (JSON) ----------
+  // Trả về object JSON, hoặc null nếu lỗi mạng/server (nơi gọi tự quyết định bỏ qua).
+  async function postJson(url, body) {
+    try {
+      var data = Object.assign({}, body || {}, { _csrf: window.__CSRF_TOKEN__ });
+      var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (e) { return null; }
+  }
+
+  function chiBoText(c) { return String(c.chiBo || "").replace(/^(chi bộ|cb)\s+/i, ""); }
+
+  // ?xd=reset (server chuyển về sau /xung-danh/dat-lai): xoá cờ trong phiên để thử lại từ đầu
+  if (/[?&]xd=reset(&|$)/.test(window.location.search || "")) {
+    try { ["xd_vf", "xd_skip", "xd_greeted"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+  }
+
+  // ---------- Hộp hỏi: "Xin cho hỏi đồng chí có phải là đồng chí ... không?" ----------
+  // candidates: [{mid, name, vai}]. Trả về: ứng viên được chọn | null (bấm "Không phải") | "later" (bấm "Để sau").
+  function askWhichOne(candidates, allowLater) {
+    return new Promise(function (resolve) {
+      var overlay = el("div", { id: "xdVerifyOverlay", class: "xd-overlay" });
+      var box = el("div", { class: "xd-box", role: "dialog", "aria-modal": "true" });
+      box.appendChild(el("div", { class: "xd-title", text: "Xác nhận thông tin" }));
+
+      var one = candidates.length === 1;
+      box.appendChild(el("div", {
+        class: "xd-desc",
+        text: one
+          ? "Xin cho hỏi, đồng chí có phải là đồng chí " + candidates[0].name + " — " + candidates[0].vai + ", chi bộ " + chiBoText(candidates[0]) + " không?"
+          : "Xin cho hỏi, đồng chí là đồng chí nào dưới đây?"
+      }));
+
+      function done(value) { overlay.remove(); resolve(value); }
+      var stack = "display:block;width:100%;margin-bottom:8px;text-align:center;";
+
+      candidates.forEach(function (c) {
+        var b = el("button", {
+          type: "button", class: "xd-btn xd-ok", style: stack,
+          text: one ? "Đúng, tôi là " + c.name : c.name + " — " + c.vai + " (" + chiBoText(c) + ")"
+        });
+        b.addEventListener("click", function () { done(c); });
+        box.appendChild(b);
+      });
+
+      var no = el("button", {
+        type: "button", class: "xd-btn xd-skip", style: stack,
+        text: one ? "Không phải" : "Không phải ai trong số này"
+      });
+      no.addEventListener("click", function () { done(null); });
+      box.appendChild(no);
+
+      if (allowLater) {
+        var later = el("button", { type: "button", class: "xd-btn xd-skip", style: stack + "font-size:12px;", text: "Để sau" });
+        later.addEventListener("click", function () { done("later"); });
+        box.appendChild(later);
+      }
+
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    });
+  }
+
+  // ---------- Người ĐÃ xưng danh (chưa đối chiếu): hỏi 1 lần mỗi phiên rồi mới chào ----------
+  async function verifyExisting(afterDone) {
+    try { if (sessionStorage.getItem("xd_vf") === "1") return afterDone(); } catch (e) {}
+
+    var r = await postJson("/xung-danh/xac-minh", {});
+    if (!r) return afterDone(); // lỗi mạng: bỏ qua, phiên sau thử lại
+    try { sessionStorage.setItem("xd_vf", "1"); } catch (e) {}
+
+    if (r.name) { // tên gõ trùng khớp tuyệt đối -> server đã tự gắn, chỉ cập nhật hiển thị
+      window.__XUNG_DANH_TEN__ = r.name;
+      updateHeaderButton(r.name);
+    }
+    if (r.candidates && r.candidates.length) {
+      var chosen = await askWhichOne(r.candidates, true);
+      if (chosen === "later") {
+        // không tính là từ chối
+      } else if (chosen) {
+        var ok = await postJson("/xung-danh/xac-nhan", { mid: chosen.mid });
+        if (ok && ok.name) {
+          window.__XUNG_DANH_TEN__ = ok.name;
+          updateHeaderButton(ok.name);
+        }
+      } else {
+        postJson("/xung-danh/khong-phai", {}); // nhớ trên máy này, đủ 2 lần thì thôi
+      }
+    }
+    afterDone();
+  }
+
   // ---------- Danh sách chi bộ ----------
   async function loadChiBoList(force) {
     if (!force && Array.isArray(window.__CHI_BO_LIST__) && window.__CHI_BO_LIST__.length) return window.__CHI_BO_LIST__;
@@ -208,12 +305,29 @@
       if (!chiBoId) return showError("Vui lòng chọn chi bộ.");
 
       okBtn.disabled = true;
+      okBtn.textContent = "Đang kiểm tra...";
+
+      // Có đảng viên nào trong ĐÚNG chi bộ này tên gần giống không? (lỗi mạng/không có -> bỏ qua, lưu như thường)
+      var mid = "";
+      var gy = await postJson("/xung-danh/goi-y", { name: name, chiBoId: chiBoId, chiBoName: chiBoName });
+      if (gy && gy.candidates && gy.candidates.length) {
+        if (gy.exact) {
+          mid = gy.candidates[0].mid; // gõ đúng hệt -> tự gắn, không hỏi
+        } else {
+          overlay.style.display = "none";
+          var chosen = await askWhichOne(gy.candidates, false);
+          overlay.style.display = "";
+          if (chosen) { mid = chosen.mid; name = chosen.name; }
+          else postJson("/xung-danh/khong-phai", {});
+        }
+      }
+
       okBtn.textContent = "Đang lưu...";
       try {
         var res = await fetch("/xung-danh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name, chiBoId: chiBoId, chiBoName: chiBoName, _csrf: window.__CSRF_TOKEN__ })
+          body: JSON.stringify({ name: name, chiBoId: chiBoId, chiBoName: chiBoName, mid: mid, _csrf: window.__CSRF_TOKEN__ })
         });
         if (!res.ok) {
           var msg = "Có lỗi khi lưu, vui lòng thử lại.";
@@ -223,13 +337,18 @@
           }
           throw new Error(msg);
         }
+        var saved = {};
+        try { saved = await res.json(); } catch (e) {}
+        var finalName = saved.name || name; // tên đúng theo danh sách (nếu đã đối chiếu)
 
         try { sessionStorage.removeItem(SKIP_KEY); } catch (e) {}
+        try { sessionStorage.setItem("xd_vf", "1"); } catch (e) {}
         window.__XUNG_DANH_CAN_HOI__ = false;
+        window.__XUNG_DANH_TEN__ = finalName;
         close();
-        updateHeaderButton(name);
-        document.dispatchEvent(new CustomEvent("xungdanh:saved", { detail: { name: name, chiBoId: chiBoId, chiBoName: chiBoName } }));
-        showGreeting(name); // vừa đăng ký xong thì chào luôn
+        updateHeaderButton(finalName);
+        document.dispatchEvent(new CustomEvent("xungdanh:saved", { detail: { name: finalName, chiBoId: chiBoId, chiBoName: chiBoName } }));
+        showGreeting(finalName); // vừa đăng ký xong thì chào luôn
       } catch (err) {
         showError(err.message || "Có lỗi khi lưu, vui lòng thử lại.");
         okBtn.disabled = false;
@@ -238,6 +357,7 @@
     }
 
     function onKey(e) {
+      if (document.getElementById("xdVerifyOverlay")) return; // đang hiện hộp hỏi: Esc không được đóng popup phía sau
       if (e.key === "Escape") skip();
     }
 
@@ -274,16 +394,17 @@
     if (btn) {
       btn.addEventListener("click", function () {
         if (window.__XUNG_DANH_CAN_HOI__ !== false) return openPopup(); // chưa xưng danh -> mở popup
-        // Đã xưng danh: chỉ chuyển trang khi đã có trang "khu vực của tôi" (server đặt __TOI_URL__)
-        if (typeof window.__TOI_URL__ === "string" && window.__TOI_URL__) window.location.href = window.__TOI_URL__;
-        else toast("Bạn đã đăng ký tên rồi, cảm ơn bạn!");
+        // Đã xưng danh: vào trang "Khu vực của tôi" (route /toi). Có thể đổi bằng window.__TOI_URL__.
+        window.location.href = (typeof window.__TOI_URL__ === "string" && window.__TOI_URL__) ? window.__TOI_URL__ : "/toi";
       });
     }
 
     if (window.__XUNG_DANH_CAN_HOI__) {
       if (!skippedThisSession()) openPopup();
     } else if (window.__XUNG_DANH_TEN__) {
-      whenSplashGone(function () { showGreeting(window.__XUNG_DANH_TEN__); }); // đã xưng danh -> chào
+      whenSplashGone(function () { // đã xưng danh -> (đối chiếu nếu cần) rồi chào
+        verifyExisting(function () { showGreeting(window.__XUNG_DANH_TEN__); });
+      });
     }
   }
 
