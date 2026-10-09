@@ -386,6 +386,10 @@
   </script>
   <% } %>
   <%- include("partials/xung-danh") %>
+  <% if (typeof hocTap !== "undefined" && hocTap) { %>
+    <script>window.HOC_TAP = <%- JSON.stringify(hocTap).replace(/</g, "\\u003c") %>;</script>
+    <script src="/public/hoc-tap.js" defer></script>
+  <% } %>
   <script>
     (function () {
       var bar = document.getElementById("rtProgressBar");
