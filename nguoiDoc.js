@@ -1,5 +1,5 @@
 import { firestore } from "./firebase.js";
-import { fetchSheet } from "./sheets.js";
+import { fetchSheetRaw } from "./sheets.js";
 
 /**
  * "Xưng danh" — không phải đăng nhập thật, chỉ để người đọc tự khai tên +
@@ -114,23 +114,86 @@ async function saveDeletedIds(ids) {
   await firestore.collection(META_COLLECTION).doc(META_DELETED_DOC).set({ ids: list });
 }
 
-/** Danh sách chi bộ từ Google Sheet (CHIBO_SHEET_URL) — cột 1 là tên chi bộ. */
+// ---- Đổi tên chi bộ (trang quản lý) ----
+// Mã chi bộ sinh từ tên nên đổi tên = đổi mã. Bảng "mã cũ -> {id, name} mới" lưu trong Firestore
+// (nguoi_dang_ky_meta/doi_ten_chi_bo) để: (1) cookie cũ trên máy người dùng tự được hiểu là chi bộ mới,
+// (2) sheet chi bộ chưa kịp sửa vẫn hiện tên mới, (3) đối chiếu đảng viên biết tên cũ còn trong sheet đảng viên.
+const META_RENAME_DOC = "doi_ten_chi_bo";
+let renameMap = new Map(); // oldId -> { id, name }
+let renameLoadedAt = 0;
+let renameLoading = null;
+
+function refreshRenames() {
+  if (renameLoading) return renameLoading;
+  renameLoading = (async () => {
+    try {
+      const snap = await firestore.collection(META_COLLECTION).doc(META_RENAME_DOC).get();
+      const m = snap.exists && snap.data().map && typeof snap.data().map === "object" ? snap.data().map : {};
+      renameMap = new Map(Object.entries(m));
+    } catch (err) {
+      console.warn("nguoiDoc.js: đọc bảng đổi tên chi bộ lỗi (giữ bản cũ):", err.message);
+    } finally {
+      renameLoadedAt = Date.now();
+      renameLoading = null;
+    }
+  })();
+  return renameLoading;
+}
+function renames() {
+  if (Date.now() - renameLoadedAt > DELETED_TTL_MS) refreshRenames(); // nền, không chờ
+  return renameMap;
+}
+// Bảng đổi tên cần có SẴN trước request đầu tiên -> nạp lúc khởi động
+refreshRenames();
+
+/** Mã chi bộ (có thể là mã cũ) -> {id, name} hiện hành; null nếu chưa từng đổi. Đi theo chuỗi đổi tên. */
+export function resolveChiBo(chiBoId) {
+  let cur = renames().get(String(chiBoId || ""));
+  if (!cur) return null;
+  for (let i = 0; i < 10; i++) {
+    const next = renames().get(cur.id);
+    if (!next || next.id === cur.id) break;
+    cur = next;
+  }
+  return cur;
+}
+
+/** Các tên CŨ của 1 chi bộ (để đối chiếu với sheet đảng viên nếu cột D chưa sửa theo). */
+export function chiBoAliases(chiBoId) {
+  const out = [];
+  for (const [oldId, to] of renames()) {
+    const final = resolveChiBo(oldId);
+    if (final && final.id === chiBoId) out.push(oldId.replace(/-/g, " "));
+    void to;
+  }
+  return out;
+}
+
+/**
+ * Danh sách chi bộ từ Google Sheet (CHIBO_SHEET_URL), đọc THEO VỊ TRÍ CỘT:
+ *   A = tên chi bộ | B = số đảng viên của chi bộ (có thể để trống)
+ * Dòng tiêu đề ("Chi bộ", "Tên chi bộ"...) và các dòng trống tự bị bỏ qua.
+ * Mỗi chi bộ: { id, name, soDangVien } (soDangVien = 0 nếu chưa điền cột B).
+ */
 export async function getChiBoList() {
   const url = process.env.CHIBO_SHEET_URL;
   if (!url) return [];
 
-  const rows = await fetchSheet(url);
+  const rows = await fetchSheetRaw(url);
   const seen = new Set();
   const list = [];
 
   for (const row of rows) {
-    const values = Object.values(row);
-    const name = String(row.name || row.ten || row.chiBo || values[0] || "").trim();
+    let name = String(row[0] || "").trim();
     if (!name) continue;
-    const id = slugify(name);
+    let id = slugify(name);
+    if (id === "chi-bo" || id === "ten-chi-bo") continue; // dòng tiêu đề
+    const so = parseInt(String(row[1] || "").replace(/[^\d]/g, ""), 10) || 0;
+    const moi = resolveChiBo(id); // chi bộ đã đổi tên trong trang quản lý -> hiện tên mới dù sheet chưa sửa
+    if (moi) { id = moi.id; name = moi.name; }
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    list.push({ id, name });
+    list.push({ id, name, soDangVien: so });
   }
 
   return list;
@@ -149,6 +212,8 @@ export async function getChiBoListCached() {
 export function getIdentity(req) {
   const data = readCookie(req, IDENTITY_COOKIE);
   if (!data || !data.name || !data.chiBoId) return null;
+  const moi = resolveChiBo(data.chiBoId);
+  if (moi) { data.chiBoId = moi.id; data.chiBoName = moi.name; } // chi bộ đã đổi tên
   if (deletedSet().has(makeReaderId(data.chiBoId, data.name))) return null; // admin đã xoá tên này
   return data;
 }
@@ -207,6 +272,16 @@ export function identityGuard(req, res, next) {
       : null;
 
     if (raw && raw.name && raw.chiBoId) {
+      const moi = resolveChiBo(raw.chiBoId);
+      if (moi) { // chi bộ đã đổi tên: ghi lại cookie theo tên mới, các lượt đọc sau ghi đúng chi bộ mới
+        raw.chiBoId = moi.id;
+        raw.chiBoName = moi.name;
+        writeCookie(res, req, IDENTITY_COOKIE, raw, IDENTITY_MAX_AGE_MS);
+        writeCookie(res, req, REGISTERED_COOKIE, { rid: makeReaderId(raw.chiBoId, raw.name) }, IDENTITY_MAX_AGE_MS);
+        req.headers.cookie = String(req.headers.cookie || "").replace(
+          new RegExp(`(^|;\\s*)${IDENTITY_COOKIE}=[^;]*`), `$1${IDENTITY_COOKIE}=${encodeURIComponent(JSON.stringify(raw))}`
+        );
+      }
       const rid = makeReaderId(raw.chiBoId, raw.name);
       if (deletedSet().has(rid)) {
         res.clearCookie(IDENTITY_COOKIE);
@@ -338,6 +413,105 @@ export function buildRoster(chiBoList, readers, peopleStats = []) {
   return list;
 }
 
+// ---- Điểm nghiên cứu / trắc nghiệm (collection "hoc_tap", xem diem.js) đi theo NGƯỜI ----
+// id dòng điểm = <mã người>__<mã văn bản>, nên đổi tên người / đổi tên chi bộ / xoá người đều phải xử lý điểm theo.
+const POINTS = "hoc_tap";
+const diemTong = (d) => (d.diemNghienCuu || 0) + (d.daLamBai ? d.diemTracNghiem || 0 : 0);
+
+/** Chuyển 1 dòng điểm sang mã người mới. Nếu người đó đã có điểm cho văn bản này thì GIỮ BẢN NHIỀU ĐIỂM HƠN (không cộng dồn). */
+async function chuyenMotDiem(oldDoc, newRid, patch) {
+  const d = oldDoc.data();
+  const newId = `${newRid}__${d.docKey}`;
+  if (newId === oldDoc.id) {
+    await oldDoc.ref.update({ ...patch, rid: newRid });
+    return;
+  }
+  const target = firestore.collection(POINTS).doc(newId);
+  const tSnap = await target.get();
+  const best = tSnap.exists && diemTong(tSnap.data()) >= diemTong(d) ? tSnap.data() : d;
+  await target.set({ ...best, ...patch, rid: newRid });
+  await oldDoc.ref.delete();
+}
+
+/** Người xưng danh sửa tên cho đúng danh sách đảng viên: chuyển điểm từ tên cũ sang tên đúng (dangVien.js gọi). */
+export async function chuyenDiemNguoi({ chiBoId, tenCu, tenMoi, chiBoName }) {
+  const ridCu = makeReaderId(chiBoId, tenCu);
+  const ridMoi = makeReaderId(chiBoId, tenMoi);
+  const snap = await firestore.collection(POINTS).where("rid", "==", ridCu).get();
+  for (const d of snap.docs) await chuyenMotDiem(d, ridMoi, { name: tenMoi, chiBoId, chiBoName });
+  return snap.docs.length;
+}
+
+async function chuyenDiemChiBo(oldId, newId, newName) {
+  const snap = await firestore.collection(POINTS).where("chiBoId", "==", oldId).get();
+  for (const d of snap.docs) {
+    const r = d.data();
+    await chuyenMotDiem(d, makeReaderId(newId, r.name), { name: r.name, chiBoId: newId, chiBoName: newName });
+  }
+  return snap.docs.length;
+}
+
+async function xoaDiemNguoi(rid) {
+  const snap = await firestore.collection(POINTS).where("rid", "==", rid).get();
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = firestore.batch();
+    snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return snap.docs.length;
+}
+
+/**
+ * ĐỔI TÊN 1 CHI BỘ (trang quản lý): mọi người thuộc chi bộ đó trong sổ đăng ký + mọi lượt đọc của họ
+ * chuyển sang tên/mã mới. Nếu tên mới trùng 1 chi bộ đang có thì coi là GỘP vào chi bộ đó.
+ * Chạy lại an toàn nếu giữa chừng bị lỗi (lọc theo mã cũ).
+ */
+export async function renameChiBo({ oldId, newName }) {
+  const oid = String(oldId || "").trim();
+  const nName = String(newName || "").replace(/\s+/g, " ").trim().slice(0, 150);
+  const nid = slugify(nName);
+  if (!oid || !nName || !nid) throw new Error("Thiếu chi bộ cũ hoặc tên mới");
+
+  const gop = oid !== nid && (await getChiBoList()).some((c) => c.id === nid); // tên mới trùng 1 chi bộ đang có
+
+  // 1) sổ đăng ký: chuyển từng người sang mã mới (id = chiBoId__tên)
+  const regSnap = await firestore.collection(REGISTRY).where("chiBoId", "==", oid).get();
+  let soNguoi = 0;
+  for (const d of regSnap.docs) {
+    const r = d.data();
+    const newRid = makeReaderId(nid, r.name);
+    const dich = firestore.collection(REGISTRY).doc(newRid);
+    const dichSnap = newRid === d.id ? null : await dich.get();
+    const createdAt = [r.createdAt, dichSnap && dichSnap.exists ? dichSnap.data().createdAt : ""].filter(Boolean).sort()[0] || r.createdAt || "";
+    await dich.set({ ...r, chiBoId: nid, chiBoName: nName, ...(createdAt ? { createdAt } : {}), updatedAt: new Date().toISOString() }, { merge: true });
+    if (newRid !== d.id) await d.ref.delete();
+    soNguoi += 1;
+  }
+
+  // 2) lượt đọc
+  const readSnap = await firestore.collection("doc_reads").where("chiBoId", "==", oid).get();
+  for (let i = 0; i < readSnap.docs.length; i += 400) {
+    const batch = firestore.batch();
+    readSnap.docs.slice(i, i + 400).forEach((d) => batch.update(d.ref, { chiBoId: nid, chiBoName: nName }));
+    await batch.commit();
+  }
+
+  // 2b) điểm nghiên cứu / trắc nghiệm
+  await chuyenDiemChiBo(oid, nid, nName);
+
+  // 3) bảng đổi tên: mã cũ -> mã mới (và chuyển tiếp các mã đã đổi trước đó trỏ vào mã cũ này)
+  const map = new Map(renames());
+  for (const [k, v] of map) if (v.id === oid) map.set(k, { id: nid, name: nName });
+  if (oid !== nid) map.set(oid, { id: nid, name: nName });
+  else for (const [k, v] of map) if (v.id === nid) map.set(k, { id: nid, name: nName });
+  await firestore.collection(META_COLLECTION).doc(META_RENAME_DOC).set({ map: Object.fromEntries(map) });
+  renameMap = map;
+  renameLoadedAt = Date.now();
+  chiBoCache = { at: 0, list: chiBoCache.list }; // buộc nạp lại danh sách chi bộ
+
+  return { soNguoi, soLuot: readSnap.docs.length, newId: nid, newName: nName, gop };
+}
+
 /**
  * Xoá 1 người: khỏi sổ đăng ký + xoá toàn bộ lượt đọc của họ (collection doc_reads, khớp chi bộ + tên)
  * + đánh dấu "đã xoá" để cookie còn trên máy họ không tiếp tục ghi lượt đọc dưới tên cũ.
@@ -367,6 +541,7 @@ export async function deleteReader({ chiBoId, name }) {
     await batch.commit();
     xoaLuot += Math.min(400, snap.docs.length - i);
   }
+  await xoaDiemNguoi(rid); // xoá luôn điểm của người này
   return { rid, xoaLuot };
 }
 
