@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thống kê chi bộ — Thư viện Đảng bộ Xuân Giang</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .me-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 20px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .me-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--color-brand, #a52424); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; flex: none; }
+    .me-name { font-size: 20px; font-weight: 700; }
+    .me-sub { color: var(--text-muted, #777); font-size: 14px; margin-top: 2px; }
+    .me-role { display: inline-block; background: #534AB7; color: #fff; border-radius: 999px; padding: 2px 12px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .me-stat { margin-left: auto; text-align: center; }
+    .me-stat b { display: block; font-size: 28px; color: var(--color-brand, #a52424); }
+    .pt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .pt-box { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 14px; text-align: center; }
+    .pt-box b { display: block; font-size: 26px; color: var(--color-brand, #a52424); line-height: 1.2; }
+    .pt-box span { font-size: 12px; color: var(--text-muted, #777); }
+    .pt-note { font-size: 12px; color: var(--text-muted, #777); margin: 6px 0 16px; line-height: 1.5; }
+    .cb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .cb-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5d5d5); border-radius: 12px; padding: 14px 16px; }
+    .cb-card h4 { margin: 0 0 8px; font-size: 14px; color: var(--text-muted, #777); font-weight: 600; }
+    .cb-line { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 14px; border-bottom: 1px dashed var(--border, #e5d5d5); }
+    .cb-line:last-child { border-bottom: none; }
+    .cb-line b { color: var(--text-primary, #1c1c1c); }
+    .cb-rank { display: inline-block; background: #0F6E56; color: #fff; border-radius: 999px; padding: 2px 12px; font-weight: 700; }
+    .btn-cb { display: inline-block; background: #534AB7; color: #fff; border-radius: 999px; padding: 10px 20px; font-weight: 600; font-size: 14px; text-decoration: none; }
+    .read-list { list-style: none; padding: 0; margin: 0; }
+    .read-item { padding: 12px 14px; border: 1px solid var(--border, #e5d5d5); border-radius: 10px; margin-bottom: 8px; background: var(--card-bg, #fff); }
+    .read-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .read-item a { font-weight: 600; color: inherit; flex: 1; }
+    .read-item a:hover { color: var(--color-brand, #a52424); }
+    .read-meta { font-size: 12px; color: var(--text-muted, #777); white-space: nowrap; text-align: right; }
+    .read-pts { margin-top: 6px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tag { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+    .tag.ok { background: rgba(29, 158, 117, 0.15); color: #0F6E56; }
+    .tag.warn { background: rgba(186, 117, 23, 0.16); color: #854F0B; }
+    .tag.none { background: rgba(127, 127, 127, 0.15); color: var(--text-muted, #777); }
+    .tag.total { background: #0F6E56; color: #fff; }
+    .tbl-wrap { overflow-x: auto; }
+    table.cb-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+    table.cb-table th, table.cb-table td { padding: 8px 10px; border-bottom: 1px solid var(--border, #e5d5d5); text-align: left; vertical-align: top; }
+    table.cb-table th { background: rgba(127, 127, 127, 0.12); font-weight: 600; }
+    table.cb-table td.num, table.cb-table th.num { text-align: center; white-space: nowrap; }
+    table.cb-table tr.dim td { color: var(--text-muted, #777); }
+    .ky-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }
+    .ky-form input, .ky-form button, .ky-form a { font-size: 14px; border-radius: 8px; padding: 7px 12px; border: 1px solid var(--border, #ccc); background: var(--card-bg, #fff); color: inherit; text-decoration: none; cursor: pointer; }
+    .ky-form button { background: #0F6E56; color: #fff; border-color: #0F6E56; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:12px;color:#fff;">
+      <div class="logo">★</div>
+      <div>
+        <div class="title">Thư viện Đảng bộ Xuân Giang</div>
+        <div class="subtitle">Thống kê chi bộ</div>
+      </div>
+    </a>
+    <div class="spacer"></div>
+    <a href="/toi" class="account-btn" style="text-decoration:none;">← Khu vực của tôi</a>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+<% var f = function (n) { return (Math.round(n * 100) / 100).toString().replace(".", ","); }; %>
+  <div class="section">
+    <div class="me-card">
+      <div class="me-avatar">👥</div>
+      <div>
+        <div class="me-name"><%= cb.name %></div>
+        <div class="me-sub">Người xem: <%= me.name %> — <%= chucVu %></div>
+      </div>
+      <div class="me-stat">
+        <% if (cb.hang) { %><b><%= cb.hang %> / <%= soXepHang %></b><span class="me-sub">hạng chi bộ · <%= ky.label %></span>
+        <% } else { %><b>—</b><span class="me-sub">chưa xếp hạng · <%= ky.label %></span><% } %>
+      </div>
+    </div>
+
+    <form class="ky-form" method="get" action="/toi/chi-bo">
+      <label>Tháng: <input type="month" name="thang" value="<%= thangChon %>" /></label>
+      <button type="submit">Xem tháng</button>
+      <a href="/toi/chi-bo?nam=<%= namChon %>">Cả năm <%= namChon %></a>
+      <a href="/toi/chi-bo">Tháng này</a>
+    </form>
+
+    <div class="pt-grid">
+      <div class="pt-box"><b><%= f(cb.diemChiBo) %></b><span>điểm chi bộ (<%= ky.label %>)</span></div>
+      <div class="pt-box"><b><%= cb.tb == null ? "—" : f(cb.tb) %></b><span>điểm trung bình / đảng viên</span></div>
+      <div class="pt-box"><b><%= cb.soXungDanh %> / <%= cb.soDangVien || "?" %></b><span>đã xưng danh / số đảng viên</span></div>
+      <div class="pt-box"><b><%= cb.soNghienCuu %></b><span>đã nghiên cứu xong ≥ 1 văn bản</span></div>
+    </div>
+    <p class="pt-note">
+      Điểm chi bộ = tổng điểm các đảng viên đã được đối chiếu với danh sách đảng viên; điểm trung bình = điểm chi bộ / <%= cb.soDangVien ? cb.soDangVien : "số đảng viên (chưa có số trong sheet chi bộ)" %>.
+      "Đã nghiên cứu xong" nghĩa là đã ở lại trang ít nhất 5 giây và đọc hết văn bản.
+      <% if (!cb.coDanhSach) { %><br>Chi bộ này chưa có trong sheet danh sách đảng viên nên chưa đối chiếu được; hiện tất cả người đã xưng danh.<% } %>
+    </p>
+
+    <div class="section-title">Từng người trong chi bộ</div>
+    <div class="tbl-wrap">
+      <table class="cb-table">
+        <thead>
+          <tr><th>#</th><th>Họ tên</th><th>Chức vụ</th><th>Tình trạng</th><th class="num">Văn bản xong</th><th class="num">Nghiên cứu</th><th class="num">Trắc nghiệm</th><th class="num">Tổng điểm</th></tr>
+        </thead>
+        <tbody>
+          <% cb.rows.forEach(function (r, i) { %>
+            <tr class="<%= r.tinhVaoChiBo ? "" : "dim" %>">
+              <td><%= i + 1 %></td>
+              <td><%= r.name %><% if (!r.tinhVaoChiBo) { %><br><small>(chưa khớp danh sách đảng viên — không tính vào điểm chi bộ)</small><% } %></td>
+              <td><%= r.chucVu %></td>
+              <td>
+                <% if (!r.xungDanh) { %><span class="tag none">Chưa xưng danh</span>
+                <% } else if (r.soVB === 0) { %><span class="tag warn">Đã xưng danh · chưa nghiên cứu xong văn bản nào</span>
+                <% } else { %><span class="tag ok">Đã nghiên cứu</span><% } %>
+              </td>
+              <td class="num"><%= r.soVB %></td>
+              <td class="num"><%= r.nc %></td>
+              <td class="num"><%= r.tn %></td>
+              <td class="num"><b><%= r.tong %></b></td>
+            </tr>
+          <% }) %>
+          <% if (!cb.rows.length) { %><tr><td colspan="8">Chưa có dữ liệu.</td></tr><% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/public/main.js"></script>
+</body>
+</html>
