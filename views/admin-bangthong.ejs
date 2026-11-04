@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Băng thông — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .bw-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .bw-note { font-size: 12.5px; color: var(--text-muted); margin: 6px 0 0; line-height: 1.6; }
+    .bw-note b { color: var(--text-primary); }
+    .bw-msg { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .bw-msg.ok { background: var(--bg-surface); border-left: 4px solid #2e7d32; }
+    .bw-msg.loi { background: var(--bg-surface); border-left: 4px solid var(--color-brand); }
+
+    .bw-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+    .bw-big { font-size: 30px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+    .bw-big small { font-size: 14px; font-weight: 400; color: var(--text-muted); }
+    .bw-badge { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-color); }
+    .bw-badge.mo { color: #2e7d32; border-color: #2e7d32; }
+    .bw-badge.han-che { color: #b26a00; border-color: #b26a00; }
+    .bw-badge.khoa { color: #fff; background: var(--color-brand); border-color: var(--color-brand); }
+
+    .bw-meter { position: relative; height: 14px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 8px; margin: 18px 0 30px; }
+    .bw-meter > .fill { position: absolute; left: 0; top: 0; bottom: 0; background: #2e7d32; border-radius: 7px 0 0 7px; max-width: 100%; }
+    .bw-meter.han-che > .fill { background: #d98a00; }
+    .bw-meter.khoa > .fill { background: var(--color-brand); }
+    .bw-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text-secondary); }
+    .bw-mark span { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+
+    .bw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .bw-table th, .bw-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+    .bw-table th { color: var(--text-muted); font-weight: 600; }
+    .bw-table td.num, .bw-table th.num { text-align: right; white-space: nowrap; }
+    .bw-table .url { word-break: break-all; max-width: 520px; }
+    .bw-table-wrap { overflow-x: auto; }
+
+    .bw-bar { height: 8px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 5px; overflow: hidden; min-width: 80px; }
+    .bw-bar > span { display: block; height: 100%; background: var(--color-brand); }
+    .bw-day { display: grid; grid-template-columns: 92px 1fr 84px; align-items: center; gap: 10px; font-size: 12.5px; margin: 5px 0; }
+    .bw-day .v { text-align: right; color: var(--text-secondary); }
+
+    .bw-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 10px; }
+    .bw-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-secondary); }
+    .bw-form input[type="text"], .bw-form select {
+      font: inherit; font-size: 13px; padding: 7px 10px; width: 130px;
+      border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-page); color: var(--text-primary);
+    }
+    .bw-btn { background: var(--color-brand); color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+    .bw-btn.phu { background: none; color: var(--text-primary); border: 1px solid var(--border-color); }
+    .bw-btn:focus-visible, .bw-form input:focus-visible, .bw-form select:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+    h3.group-title { font-size: 15px; margin: 26px 0 10px; }
+    .bw-split { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; margin-top: 12px; }
+    .bw-split b { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Băng thông</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/gop-y" class="account-btn" style="margin-right:8px;">💬 Góp ý</a>
+    <a href="/quanly/bo-nho-dem" class="account-btn" style="margin-right:8px;">🗂 Bộ nhớ đệm</a>
+    <a href="/quanly/nguoi-doc" class="account-btn" style="margin-right:8px;">👥 Người đọc</a>
+    <a href="/quanly/nhat-ky-loi" class="account-btn">🩺 Nhật ký lỗi</a>
+  </header>
+
+  <%
+    function fmtBytes(b) {
+      b = Number(b) || 0;
+      if (b >= 1073741824) return (b / 1073741824).toFixed(2) + " GB";
+      if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB";
+      if (b >= 1024) return Math.round(b / 1024) + " KB";
+      return b + " B";
+    }
+    function gb(n) { return String(Number(n)).replace(".", ","); }
+    var GB = 1073741824;
+    var tenCap = { "mo": "Bình thường", "han-che": "Bậc 1 — hạn chế", "khoa": "Bậc 2 — khóa" };
+    // Thang đo: vạch bậc 2 nằm ở 85% bề ngang để còn chỗ hiện phần vượt.
+    var thangDo = hardGB * 1.18;
+    function toaDo(bytes) { return Math.max(0, Math.min(100, (bytes / GB) / thangDo * 100)); }
+    var maxNgay = 0;
+    theoNgay.forEach(function (d) { if (d.bytes > maxNgay) maxNgay = d.bytes; });
+    var tongNhom = tongNguoi + tongBot;
+  %>
+
+  <div class="section">
+
+    <% if (thongBao) { %>
+      <div class="bw-msg <%= thongBao.loai %>" role="status"><%= thongBao.noiDung %></div>
+    <% } %>
+
+    <h3 class="group-title" style="margin-top:0;">📶 Tháng <%= thang %></h3>
+
+    <div class="bw-block">
+      <div class="bw-head">
+        <div class="bw-big"><%= fmtBytes(tong) %> <small>đã dùng (số đo của app)</small></div>
+        <span class="bw-badge <%= capDo %>"><%= tenCap[capDo] %></span>
+        <% if (dangMoKhoa) { %><span class="bw-badge">Đang mở khóa tạm đến <%= moKhoaDen %></span><% } %>
+      </div>
+
+      <div class="bw-meter <%= capDo %>" role="img" aria-label="Đã dùng <%= fmtBytes(tong) %>; bậc 1 ở <%= gb(softGB) %> GB, bậc 2 ở <%= gb(hardGB) %> GB">
+        <div class="fill" style="width:<%= toaDo(tong).toFixed(1) %>%"></div>
+        <div class="bw-mark" style="left:<%= toaDo(softGB * GB).toFixed(1) %>%"><span>Bậc 1 · <%= gb(softGB) %> GB</span></div>
+        <div class="bw-mark" style="left:<%= toaDo(hardGB * GB).toFixed(1) %>%"><span>Bậc 2 · <%= gb(hardGB) %> GB</span></div>
+      </div>
+
+      <p class="bw-note">
+        Bậc 1: tắt PDF/podcast/phát thanh qua server, siết hạn mức theo IP và giọng đọc máy chủ, chặn cả bot tìm kiếm.
+        Bậc 2: mọi người chỉ thấy trang “tạm nghỉ”; khu quản lý vẫn vào được.
+        Số đếm tính theo giờ UTC và đặt lại về 0 vào đầu mỗi tháng (UTC).
+      </p>
+      <% if (offset !== 0) { %>
+        <p class="bw-note">Số đếm thô của app: <b><%= fmtBytes(tongDem) %></b>, đang cộng hiệu chỉnh <b><%= offset > 0 ? "+" : "−" %><%= fmtBytes(Math.abs(offset)) %></b> để khớp số Render báo.</p>
+      <% } %>
+      <% if (!daTai) { %>
+        <p class="bw-note"><b>Chưa đọc được số liệu đã lưu trên Firestore.</b> Số hiện tại chỉ gồm phần đếm từ lúc server khởi động; sẽ tự cộng dồn khi đọc được.</p>
+      <% } %>
+    </div>
+
+    <div class="bw-block">
+      <b style="font-size:14px;">Mở khóa tạm</b>
+      <p class="bw-note">
+        Dùng khi đã vượt ngưỡng mà vẫn cần mở lại (ví dụ đã nâng gói hoặc đã gắn thẻ thanh toán). Hết thời gian chọn, khóa tự bật lại nếu số đã dùng vẫn vượt ngưỡng.
+      </p>
+      <form method="POST" action="/quanly/bang-thong/mo-khoa" class="bw-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>Mở trong
+          <select name="gio">
+            <option value="1">1 giờ</option>
+            <option value="6">6 giờ</option>
+            <option value="24" selected>24 giờ</option>
+            <option value="72">3 ngày</option>
+          </select>
+        </label>
+        <button type="submit" class="bw-btn">Mở khóa</button>
+      </form>
+      <% if (dangMoKhoa) { %>
+        <form method="POST" action="/quanly/bang-thong/mo-khoa" class="bw-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="gio" value="0" />
+          <button type="submit" class="bw-btn phu">Bật lại khóa ngay</button>
+        </form>
+      <% } %>
+    </div>
+
+    <h3 class="group-title">Theo nhóm</h3>
+    <div class="bw-block">
+      <div class="bw-table-wrap">
+        <table class="bw-table">
+          <tr>
+            <th>Nhóm</th>
+            <th class="num">Người</th>
+            <th class="num">Bot</th>
+            <th class="num">Tổng</th>
+            <th>Tỷ lệ</th>
+            <th class="num">Lượt (người / bot)</th>
+          </tr>
+          <% if (theoNhom.length === 0) { %>
+            <tr><td colspan="6" style="color:var(--text-muted);">Chưa có số liệu.</td></tr>
+          <% } %>
+          <% theoNhom.forEach(function (n) { %>
+            <tr>
+              <td><%= n.ten %></td>
+              <td class="num"><%= fmtBytes(n.nguoiB) %></td>
+              <td class="num"><%= fmtBytes(n.botB) %></td>
+              <td class="num"><b><%= fmtBytes(n.tong) %></b></td>
+              <td><div class="bw-bar"><span style="width:<%= tongNhom ? Math.round(n.tong / tongNhom * 100) : 0 %>%"></span></div></td>
+              <td class="num"><%= n.nguoiN %> / <%= n.botN %></td>
+            </tr>
+          <% }) %>
+        </table>
+      </div>
+      <div class="bw-split">
+        <span>Người: <b><%= fmtBytes(tongNguoi) %></b></span>
+        <span>Bot (gồm ping, bot tìm kiếm, bot bị chặn): <b><%= fmtBytes(tongBot) %></b></span>
+      </div>
+      <p class="bw-note">Số này chưa gồm phần hiệu chỉnh. “Bot” gồm cả các lượt bị chặn (403/429/503) vì chúng cũng tốn một ít byte.</p>
+    </div>
+
+    <h3 class="group-title">14 ngày gần nhất</h3>
+    <div class="bw-block">
+      <% if (theoNgay.length === 0) { %>
+        <p class="bw-note" style="margin:0;">Chưa có số liệu theo ngày.</p>
+      <% } %>
+      <% theoNgay.forEach(function (d) { %>
+        <div class="bw-day">
+          <span><%= d.ngay %></span>
+          <div class="bw-bar"><span style="width:<%= maxNgay ? Math.round(d.bytes / maxNgay * 100) : 0 %>%"></span></div>
+          <span class="v"><%= fmtBytes(d.bytes) %></span>
+        </div>
+      <% }) %>
+    </div>
+
+    <h3 class="group-title">Ảnh nặng nhất tháng này</h3>
+    <div class="bw-block">
+      <% if (anhNang.length === 0) { %>
+        <p class="bw-note" style="margin:0;">Chưa ghi nhận ảnh nào.</p>
+      <% } else { %>
+        <div class="bw-table-wrap">
+          <table class="bw-table">
+            <tr>
+              <th>Ảnh</th>
+              <th class="num">Lượt tải</th>
+              <th class="num">Tổng đã gửi</th>
+              <th class="num">Lớn nhất 1 lần</th>
+            </tr>
+            <% anhNang.forEach(function (a) { %>
+              <tr>
+                <td class="url">
+                  <% if (a.href) { %>
+                    <a href="<%= a.href %>" target="_blank" rel="noopener noreferrer"><%= a.k %></a>
+                  <% } else { %>
+                    <%= a.k %>
+                  <% } %>
+                </td>
+                <td class="num"><%= a.n %></td>
+                <td class="num"><b><%= fmtBytes(a.b) %></b></td>
+                <td class="num"><%= fmtBytes(a.m) %></td>
+              </tr>
+            <% }) %>
+          </table>
+        </div>
+        <p class="bw-note">Ảnh có “Lớn nhất 1 lần” trên vài trăm KB mà hiển thị nhỏ trên trang là ứng viên đầu tiên để thu nhỏ hoặc bỏ khỏi trang chủ.</p>
+      <% } %>
+    </div>
+
+    <h3 class="group-title">Địa chỉ mạng (IP) tốn nhiều nhất hôm nay</h3>
+    <div class="bw-block">
+      <% if (ipNang.length === 0) { %>
+        <p class="bw-note" style="margin:0;">Chưa có số liệu.</p>
+      <% } else { %>
+        <div class="bw-table-wrap">
+          <table class="bw-table">
+            <tr>
+              <th>IP</th>
+              <th>Loại</th>
+              <th class="num">Đã gửi</th>
+              <th class="num">Lượt</th>
+              <th>Trình duyệt / công cụ</th>
+            </tr>
+            <% var tenLoai = { nguoi: "Người", tot: "Bot tìm kiếm", xau: "Bot bị chặn", ping: "Ping" }; %>
+            <% ipNang.forEach(function (p) { %>
+              <tr>
+                <td><%= p.ip %></td>
+                <td><%= tenLoai[p.loai] || p.loai %></td>
+                <td class="num"><b><%= fmtBytes(p.bytes) %></b></td>
+                <td class="num"><%= p.n %></td>
+                <td class="url"><%= p.ua || "(trống)" %></td>
+              </tr>
+            <% }) %>
+          </table>
+        </div>
+      <% } %>
+      <p class="bw-note">Bảng này chỉ nằm trong bộ nhớ, đếm từ lúc server khởi động trong ngày hôm nay (UTC); mất khi server khởi động lại.</p>
+      <p class="bw-note">
+        Giới hạn theo IP đang áp dụng (mỗi IP): ảnh <b><%= gioiHan.req10p.anh %></b>, giọng đọc <b><%= gioiHan.req10p.tts %></b>,
+        PDF <b><%= gioiHan.req10p.pdf %></b>, podcast <b><%= gioiHan.req10p.podcast %></b>, phát thanh <b><%= gioiHan.req10p.radio %></b> yêu cầu / 10 phút;
+        tối đa <b><%= gioiHan.mbNgay %> MB</b> dữ liệu nặng và <b><%= gioiHan.ttsNgay %></b> đoạn giọng đọc máy chủ mỗi ngày.
+        Đổi bằng biến môi trường BW_IP_ANH, BW_IP_TTS, BW_IP_PDF, BW_IP_PODCAST, BW_IP_RADIO, BW_IP_MB_NGAY, BW_IP_TTS_NGAY.
+      </p>
+    </div>
+
+    <h3 class="group-title">Cài đặt</h3>
+    <div class="bw-block">
+      <b style="font-size:14px;">Ngưỡng khóa</b>
+      <p class="bw-note">Tính bằng GB theo số đo của app. Nên đặt thấp hơn hạn mức thật của Render một khoảng an toàn.</p>
+      <form method="POST" action="/quanly/bang-thong/nguong" class="bw-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>Bậc 1 — hạn chế (GB)
+          <input type="text" name="softGB" inputmode="decimal" value="<%= gb(softGB) %>" />
+        </label>
+        <label>Bậc 2 — khóa (GB)
+          <input type="text" name="hardGB" inputmode="decimal" value="<%= gb(hardGB) %>" />
+        </label>
+        <button type="submit" class="bw-btn">Lưu ngưỡng</button>
+      </form>
+    </div>
+
+    <div class="bw-block">
+      <b style="font-size:14px;">Hiệu chỉnh theo số Render báo</b>
+      <p class="bw-note">
+        Vào Render → dịch vụ → Metrics → Bandwidth (hoặc trang Billing/Usage của workspace), lấy số GB đã dùng trong tháng rồi nhập vào đây.
+        App sẽ cộng/trừ phần chênh để tổng khớp với số đó; các lượt đếm sau vẫn cộng dồn bình thường.
+      </p>
+      <form method="POST" action="/quanly/bang-thong/hieu-chinh" class="bw-form"
+            onsubmit="return confirm('Đặt tổng đã dùng tháng này bằng đúng số bạn nhập?');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>Render báo (GB)
+          <input type="text" name="renderGB" inputmode="decimal" placeholder="ví dụ 1,8" />
+        </label>
+        <button type="submit" class="bw-btn phu">Hiệu chỉnh</button>
+      </form>
+    </div>
+
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly/thoat">· Thoát</a>
+  </footer>
+
+</body>
+</html>

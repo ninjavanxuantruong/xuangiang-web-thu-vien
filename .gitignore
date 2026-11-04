@@ -1,49 +1,23 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Biến môi trường thật — KHÔNG bao giờ commit (chứa key Firebase, mật khẩu quản lý...)
+.env
 
-# compiled output
-dist
-tmp
-out-tsc
-*.tsbuildinfo
-.expo
-.expo-shared
+# Thư viện cài qua npm — không cần commit, chạy `npm install` để tự tải lại
+node_modules/
 
-# dependencies
-node_modules
+# Cache audio TTS tự sinh ra khi chạy — không cần commit, tự tạo lại khi có người nghe
+tts.js/audio-cache/
+audio-cache/
+pdf-cache/
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Ảnh dự phòng (fallback) cho phần "Bài đọc đề xuất" — bạn tự tải về máy/server,
+# không cần đẩy lên GitHub (theo yêu cầu trong buổi thảo luận)
+public/images/fallback/
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
+# File hệ điều hành / editor
 .DS_Store
 Thumbs.db
+.vscode/
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
-.cache/
-.local/
+# Log
+npm-debug.log*
+*.log

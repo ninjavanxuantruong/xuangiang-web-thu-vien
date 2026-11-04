@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mindmap — <%= doc.name %></title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .mindmap-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+    .mindmap-canvas {
+      position: relative;
+      width: 100%;
+      max-width: 700px;
+      height: 460px;
+      margin: 20px auto 0;
+    }
+    .mindmap-canvas svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .mindmap-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: var(--bg-page);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 190px;
+      text-align: center;
+    }
+    .mindmap-node.center {
+      background: var(--color-brand);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      max-width: 160px;
+      border: none;
+    }
+    .mindmap-node.branch {
+      cursor: pointer;
+    }
+    .mindmap-node.branch.sentence-highlight {
+      border-color: var(--color-brand);
+      box-shadow: 0 0 0 2px rgba(166, 38, 38, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reader-toolbar">
+    <button data-tts-play>▶ Nghe toàn bộ</button>
+    <button data-tts-stop>■ Dừng</button>
+    <button data-toggle-theme>🌙 Tối</button>
+    <a href="/doc/<%= encodeURIComponent(doc.name) %>" style="margin-left:auto;font-size:12px;color:var(--text-muted);">Xem toàn văn →</a>
+  </div>
+
+  <div class="mindmap-wrap">
+    <h1 style="font-size:1.2em;text-align:center;"><%= doc.name %></h1>
+    <p style="text-align:center;color:var(--text-muted);font-size:12px;">Sơ đồ tư duy tóm tắt nội dung chính</p>
+
+    <%
+      const centerX = 350, centerY = 230, radius = 165;
+      const positions = summaries.map(function (text, i) {
+        const angle = (Math.PI * 2 * i) / summaries.length - Math.PI / 2;
+        return {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+          text: text
+        };
+      });
+    %>
+
+    <div class="mindmap-canvas">
+      <svg viewBox="0 0 700 460">
+        <% positions.forEach(function (p) { %>
+          <line x1="350" y1="230" x2="<%= p.x %>" y2="<%= p.y %>" stroke="var(--border-color)" stroke-width="2" />
+        <% }) %>
+      </svg>
+
+      <div class="mindmap-node center" style="left:350px;top:230px;"><%= doc.name %></div>
+
+      <% positions.forEach(function (p) { %>
+        <div class="mindmap-node branch tts-chunk" style="left:<%= p.x %>px;top:<%= p.y %>px;">
+          <%= p.text %>
+        </div>
+      <% }) %>
+    </div>
+
+    <% if (summaries.length === 0) { %>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:20px;">
+        Tài liệu này chưa có tóm tắt để dựng sơ đồ tư duy.
+      </p>
+    <% } %>
+  </div>
+
+  <script src="/public/main.js"></script>
+</body>
+</html>

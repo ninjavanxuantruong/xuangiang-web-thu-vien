@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= doc.name %></title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <% if (doc.type === "pdf") { %>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <% } %>
+  <style>
+    /* Toàn bộ trang PDF được coi là 1 "đoạn" TTS — khi đang đọc trang nào,
+       khung ảnh trang đó được viền nhẹ để người dùng biết đang đọc tới đâu
+       (đơn giản hơn overlay tô từng chữ như bản cũ, nhưng vẫn đủ để theo dõi). */
+    .pdf-page.sentence-highlight {
+      outline: 3px solid rgba(166, 38, 38, 0.5);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    /* Mỗi trang PDF là 1 khung giữ chỗ đúng tỉ lệ trang (padding-bottom do JS
+       đặt), canvas chỉ được vẽ khi trang gần vào màn hình và được xoá khi đã
+       cuộn xa — để điện thoại không phải giữ hàng trăm MB ảnh trong bộ nhớ. */
+    .pdf-page {
+      position: relative;
+      width: 100%;
+      height: 0;
+      margin: 0 auto 16px;
+      background: var(--bg-page);
+      border-radius: 6px;
+      box-shadow: var(--shadow-card);
+    }
+    .pdf-page canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reader-toolbar rt">
+    <div class="rt-main">
+      <button class="rt-btn rt-read" data-tts-play>▶ Đọc trang</button>
+      <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.slides && summary.slides.length > 0) { %>
+        <button class="rt-btn rt-sum" id="toggleSummaryBtn">Xem tóm tắt</button>
+      <% } %>
+      <button class="rt-btn rt-share" data-copy-link="/doc/<%= encodeURIComponent(doc.name) %>">Chia sẻ</button>
+    </div>
+    <div class="rt-sub">
+      <button data-tts-stop>■ Dừng</button>
+      <button data-speed-down>Chậm</button>
+      <button data-speed-up>Nhanh</button>
+      <button data-font-smaller>A-</button>
+      <button data-font-bigger>A+</button>
+      <button data-open-listen-mode>🎧 Nghe khi di chuyển</button>
+      <button data-toggle-theme>🌙 Tối</button>
+      <a class="rt-link" href="/tai-ve/<%= encodeURIComponent(doc.name) %>" target="_blank">⬇ Tải về</a>
+    </div>
+    <a class="rt-home" href="/">← Trang chính</a>
+    <div class="rt-progress"><div id="rtProgressBar"></div></div>
+  </div>
+
+  <div style="display:none" data-doc-name><%= doc.name %></div>
+
+  <div class="reader-content">
+    <h1 style="font-size:1.3em;margin-bottom:4px;"><%= doc.name %></h1>
+
+    <% if (doc.type === "word" && typeof summary !== "undefined" && summary && summary.slides && summary.slides.length > 0) { %>
+      <%
+        var PALETTE = [
+          { bg: "#085041", fg: "#E1F5EE", ac: "#5DCAA5", ln: "#1D9E75", chip: "#E1F5EE", chipFg: "#04342C" },
+          { bg: "#3C3489", fg: "#EEEDFE", ac: "#AFA9EC", ln: "#7F77DD", chip: "#EEEDFE", chipFg: "#26215C" },
+          { bg: "#712B13", fg: "#FAECE7", ac: "#F0997B", ln: "#D85A30", chip: "#FAECE7", chipFg: "#4A1B0C" },
+          { bg: "#0C447C", fg: "#E6F1FB", ac: "#85B7EB", ln: "#378ADD", chip: "#E6F1FB", chipFg: "#042C53" },
+          { bg: "#72243E", fg: "#FBEAF0", ac: "#ED93B1", ln: "#D4537E", chip: "#FBEAF0", chipFg: "#4B1528" },
+          { bg: "#27500A", fg: "#EAF3DE", ac: "#97C459", ln: "#639922", chip: "#EAF3DE", chipFg: "#173404" },
+          { bg: "#633806", fg: "#FAEEDA", ac: "#EF9F27", ln: "#BA7517", chip: "#FAEEDA", chipFg: "#412402" }
+        ];
+        var lastC = -1;
+      %>
+      <div id="summaryView" style="display:none;margin:12px 0 20px;">
+        <% summary.slides.forEach(function(sl, i) {
+             var c;
+             do { c = Math.floor(Math.random() * PALETTE.length); } while (c === lastC);
+             lastC = c;
+             var P = PALETTE[c]; %>
+          <section class="slide" style="--s-bg:<%= P.bg %>;--s-fg:<%= P.fg %>;--s-ac:<%= P.ac %>;--s-ln:<%= P.ln %>;--s-chip:<%= P.chip %>;--s-chipfg:<%= P.chipFg %>;">
+            <div class="slide-frame">
+              <div class="slide-top">
+                <span>Tóm tắt văn bản</span>
+                <span>Trang <%= i + 1 %> / <%= summary.slides.length %></span>
+              </div>
+              <% if (sl.type === "cover") { %>
+                <div class="slide-cover">
+                  <div class="slide-cover-title"><%= sl.title %></div>
+                  <% if (sl.subtitle) { %><div class="slide-cover-sub"><%= sl.subtitle %></div><% } %>
+                  <% if (sl.meta) { %><div class="slide-cover-meta"><%= sl.meta %></div><% } %>
+                </div>
+              <% } else { %>
+                <% if (sl.title) { %>
+                  <div class="slide-title"><%= sl.title %><%= sl.cont ? " (tiếp)" : "" %></div>
+                <% } %>
+                <% if (sl.crumb) { %><div class="slide-crumb"><%= sl.crumb %></div><% } %>
+                <% if (sl.label) { %><div class="slide-label"><%= sl.label %></div><% } %>
+                <ul class="slide-list">
+                  <% sl.bullets.forEach(function(b) { %><li><span><%= b %></span></li><% }) %>
+                </ul>
+              <% } %>
+            </div>
+          </section>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <div id="fullContentView">
+    <% if (doc.type === "word") { %>
+      <% if (typeof summary !== "undefined" && summary && summary.full && summary.full.length > 0) { %>
+        <% summary.full.forEach(function(it) { %>
+          <% if (it.type === "section") { %>
+            <div class="fv-section fv-c<%= it.c %> tts-chunk">
+              <% if (it.label) { %><div class="fv-kicker"><%= it.label %></div><% } %>
+              <div class="fv-section-title"><%= it.text %></div>
+            </div>
+          <% } else if (it.type === "sub") { %>
+            <div class="fv-sub fv-sub--<%= it.level %> fv-c<%= it.c %> tts-chunk"><span class="fv-chip"><%= it.text %></span></div>
+          <% } else if (it.type === "item") { %>
+            <div class="fv-item fv-c<%= it.c %> tts-chunk">
+              <span class="fv-badge"><%= it.num %></span>
+              <span class="fv-item-text"><%- it.html %></span>
+            </div>
+          <% } else if (it.type === "bullet") { %>
+            <p class="fv-bullet fv-c<%= it.c %> tts-chunk"><%- it.html %></p>
+          <% } else if (it.type === "table") { %>
+            <div class="fv-table-wrap fv-c<%= it.c %>">
+              <table class="fv-table">
+                <% it.rows.forEach(function(row, ri) {
+                     var isHead = (ri === 0 && it.rows.length > 1);
+                     var T = isHead ? "th" : "td";
+                     var isGroup = !isHead && row[0] && /^[IVX]{1,6}$/.test(row[0].text); %>
+                  <tr class="tts-chunk<%= isGroup ? ' fv-group' : '' %>">
+                    <% row.forEach(function(cell, ci) {
+                         var num = /^[\d.,\s%]+$/.test(cell.text); %>
+                      <<%- T %><%- cell.colspan > 1 ? ' colspan="' + cell.colspan + '"' : '' %><%- cell.rowspan > 1 ? ' rowspan="' + cell.rowspan + '"' : '' %><%- num ? ' class="fv-n"' : '' %>><%= cell.text %><% if (ci < row.length - 1) { %><span class="fv-sr">, </span><% } %></<%- T %>>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </table>
+            </div>
+          <% } else if (it.type === "subject") { %>
+            <div class="fv-subject tts-chunk"><%- it.html %></div>
+          <% } else if (it.type === "meta") { %>
+            <div class="fv-meta"><%- it.html %></div>
+          <% } else { %>
+            <p class="fv-c<%= it.c %> tts-chunk"><%- it.html %></p>
+          <% } %>
+        <% }) %>
+      <% } else { %>
+        <% textBlocks.forEach(function(html) { %>
+          <p class="tts-chunk"><%- html %></p>
+        <% }) %>
+      <% } %>
+    <% } %>
+
+    <% if (doc.type === "pdf") { %>
+      <div id="pdfContainer"></div>
+      <p id="pdfLoadingNote" style="text-align:center;color:var(--text-muted);font-size:12px;">Đang tải tài liệu...</p>
+    <% } %>
+
+    <% if (doc.type === "youtube") { %>
+      <div style="position:relative;padding-top:56.25%;border-radius:var(--radius-md);overflow:hidden;">
+        <iframe
+          src="<%= embedUrl %>"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+      </div>
+    <% } %>
+    </div>
+  </div>
+
+  <script src="/public/main.js"></script>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("toggleSummaryBtn");
+      if (!btn) return; // tài liệu không có tóm tắt (PDF/Youtube, hoặc chưa lấy được nội dung)
+
+      var summaryView = document.getElementById("summaryView");
+      var fullView = document.getElementById("fullContentView");
+
+      btn.addEventListener("click", function () {
+        var showingSummary = summaryView.style.display !== "none";
+        if (showingSummary) {
+          summaryView.style.display = "none";
+          fullView.style.display = "";
+          btn.textContent = "Xem tóm tắt";
+        } else {
+          summaryView.style.display = "";
+          fullView.style.display = "none";
+          btn.textContent = "Xem đầy đủ";
+        }
+      });
+    })();
+  </script>
+
+  <% if (doc.type === "pdf") { %>
+  <script>
+    // PDF dài trên điện thoại: KHÔNG vẽ hết mọi trang cùng lúc (bản cũ vẽ toàn
+    // bộ với độ phân giải x3 của iPhone -> hàng GB bộ nhớ -> Chrome/Safari tự
+    // đóng tab, hiện "Không thể mở trang này"). Bản này:
+    //  - dựng sẵn khung trống đúng tỉ lệ cho MỌI trang (cuộn mượt, không giật);
+    //  - chỉ vẽ trang nào gần màn hình (~1,5 màn hình phía trên/dưới);
+    //  - cuộn xa khỏi trang nào thì xoá ảnh trang đó, giải phóng bộ nhớ;
+    //  - vẽ vừa đủ độ nét theo bề rộng màn hình, chặn trần số điểm ảnh.
+    document.addEventListener("DOMContentLoaded", async () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      const container = document.getElementById("pdfContainer");
+      const pdfUrl = "<%= pdfUrl %>";
+      const loadingNote = document.getElementById("pdfLoadingNote");
+
+      const MAX_DPR = 2;                 // iPhone có dpr 3, vẽ x2 là đủ nét
+      const MAX_CANVAS_PIXELS = 3000000; // trần ~12MB/canvas dù trang to cỡ nào
+      const ROOT_MARGIN = "150% 0px 150% 0px";
+
+      try {
+        const pdfDoc = await pdfjsLib.getDocument({ url: pdfUrl }).promise;
+
+        // Tỉ lệ trang 1 làm mặc định cho khung giữ chỗ; từng trang sẽ được
+        // chỉnh lại đúng tỉ lệ riêng khi đọc chữ ở nền (bên dưới).
+        const firstPage = await pdfDoc.getPage(1);
+        const firstVp = firstPage.getViewport({ scale: 1 });
+        const defaultRatio = (firstVp.height / firstVp.width) * 100;
+
+        const entries = [];
+        const byEl = new Map();
+
+        for (let n = 1; n <= pdfDoc.numPages; n++) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "pdf-page tts-chunk";
+          wrapper.setAttribute("data-page", n);
+          wrapper.style.paddingBottom = defaultRatio + "%";
+
+          // Chữ ẩn dùng cho TTS (không hiện đè lên ảnh trang)
+          const hiddenText = document.createElement("span");
+          hiddenText.style.cssText =
+            "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);";
+          wrapper.appendChild(hiddenText);
+
+          container.appendChild(wrapper);
+
+          const entry = {
+            num: n, wrapper, hiddenText,
+            canvas: null, task: null,
+            visible: false, rendered: false, rendering: false
+          };
+          entries.push(entry);
+          byEl.set(wrapper, entry);
+        }
+
+        if (loadingNote) loadingNote.remove();
+
+        // ---- Vẽ / xoá trang theo vị trí cuộn ----
+        async function renderPage(entry) {
+          if (entry.rendered || entry.rendering) return;
+          entry.rendering = true;
+          try {
+            const page = await pdfDoc.getPage(entry.num);
+            const cssWidth = entry.wrapper.clientWidth || container.clientWidth || 360;
+            const base = page.getViewport({ scale: 1 });
+            const viewport = page.getViewport({ scale: cssWidth / base.width });
+
+            let outScale = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+            const pixels = viewport.width * viewport.height * outScale * outScale;
+            if (pixels > MAX_CANVAS_PIXELS) outScale *= Math.sqrt(MAX_CANVAS_PIXELS / pixels);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.floor(viewport.width * outScale));
+            canvas.height = Math.max(1, Math.floor(viewport.height * outScale));
+            entry.canvas = canvas;
+
+            entry.task = page.render({
+              canvasContext: canvas.getContext("2d"),
+              viewport,
+              transform: outScale !== 1 ? [outScale, 0, 0, outScale, 0, 0] : undefined
+            });
+            await entry.task.promise;
+
+            // Trong lúc vẽ mà đã cuộn đi mất -> bỏ, không gắn vào trang
+            if (!entry.visible || entry.canvas !== canvas) {
+              canvas.width = 0; canvas.height = 0;
+              return;
+            }
+            entry.wrapper.insertBefore(canvas, entry.wrapper.firstChild);
+            entry.rendered = true;
+            page.cleanup();
+          } catch (err) {
+            if (!err || err.name !== "RenderingCancelledException") {
+              console.warn("Không vẽ được trang " + entry.num + ":", err && err.message);
+            }
+            releasePage(entry);
+          } finally {
+            entry.rendering = false;
+            entry.task = null;
+            // Cuộn ra rồi cuộn lại đúng lúc đang huỷ -> vẽ lại cho trang đang hiện
+            if (entry.visible && !entry.rendered) enqueue(entry);
+          }
+        }
+
+        function releasePage(entry) {
+          if (entry.task) { try { entry.task.cancel(); } catch (e) { /* bỏ qua */ } }
+          if (entry.canvas) {
+            // Đặt về 0 để iOS giải phóng bộ nhớ ảnh ngay, không đợi dọn rác
+            entry.canvas.width = 0;
+            entry.canvas.height = 0;
+            entry.canvas.remove();
+            entry.canvas = null;
+          }
+          entry.rendered = false;
+        }
+
+        // Vẽ lần lượt từng trang một (không vẽ song song) để đỡ nghẽn bộ nhớ
+        const queue = [];
+        let pumping = false;
+        function enqueue(entry) {
+          if (!queue.includes(entry)) queue.push(entry);
+          pump();
+        }
+        async function pump() {
+          if (pumping) return;
+          pumping = true;
+          while (queue.length) {
+            const entry = queue.shift();
+            if (entry.visible && !entry.rendered) await renderPage(entry);
+          }
+          pumping = false;
+        }
+
+        const observer = new IntersectionObserver(
+          (list) => {
+            list.forEach((ob) => {
+              const entry = byEl.get(ob.target);
+              if (!entry) return;
+              entry.visible = ob.isIntersecting;
+              if (entry.visible) enqueue(entry);
+              else releasePage(entry);
+            });
+          },
+          { rootMargin: ROOT_MARGIN }
+        );
+        entries.forEach((entry) => observer.observe(entry.wrapper));
+
+        // ---- Nền: chỉnh tỉ lệ từng trang + lấy chữ cho TTS (nhẹ, không vẽ ảnh) ----
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          try {
+            const page = await pdfDoc.getPage(entry.num);
+            const vp = page.getViewport({ scale: 1 });
+            entry.wrapper.style.paddingBottom = (vp.height / vp.width) * 100 + "%";
+
+            const textContent = await page.getTextContent();
+            entry.hiddenText.textContent = textContent.items
+              .map((it) => it.str)
+              .join(" ")
+              .trim();
+            page.cleanup();
+          } catch (err) {
+            console.warn("Không đọc được chữ trang " + entry.num + ":", err && err.message);
+          }
+        }
+
+        // TTS chụp lại chữ của từng trang lúc khởi tạo -> gọi SAU khi đã lấy đủ chữ.
+        if (window.initReaderPlayer) window.initReaderPlayer();
+      } catch (err) {
+        console.error("Lỗi tải PDF:", err);
+        if (loadingNote) loadingNote.remove();
+        container.innerHTML = '<p style="color:var(--color-brand);">Không tải được PDF. Vui lòng kiểm tra lại link.</p>';
+      }
+    });
+  </script>
+  <% } %>
+  <%- include("partials/xung-danh") %>
+  <% if (typeof hocTap !== "undefined" && hocTap) { %>
+    <script>window.HOC_TAP = <%- JSON.stringify(hocTap).replace(/</g, "\\u003c") %>;</script>
+    <script src="/public/hoc-tap.js" defer></script>
+  <% } %>
+  <script>
+    (function () {
+      var bar = document.getElementById("rtProgressBar");
+      if (!bar) return;
+      function update() {
+        var h = document.documentElement;
+        var max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+      }
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      update();
+    })();
+  </script>
+</body>
+</html>

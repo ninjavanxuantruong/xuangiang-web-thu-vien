@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khu quản lý — Ban Xây dựng Đảng</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Thư viện Đảng bộ Xuân Giang</div>
+      <div class="subtitle">Khu quản lý nội bộ</div>
+    </div>
+  </header>
+
+  <div class="admin-gate-wrap">
+    <div class="admin-gate-box">
+      <div class="icon">🔒</div>
+      <h1>Khu vực quản lý</h1>
+      <p>Chỉ dành cho Ban Xây dựng Đảng. Vui lòng nhập mật khẩu để tiếp tục.</p>
+
+      <% if (typeof error !== "undefined" && error) { %>
+        <div class="error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/quanly">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <input
+          type="password"
+          name="password"
+          placeholder="Nhập mật khẩu"
+          autofocus
+          required
+        />
+        <button type="submit">Vào khu quản lý</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+  </footer>
+
+</body>
+</html>

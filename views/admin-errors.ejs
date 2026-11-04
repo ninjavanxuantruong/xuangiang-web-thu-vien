@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nhật ký lỗi — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .err-row {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-brand);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+    .err-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .err-msg {
+      font-size: 12.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .danger {
+      background: var(--color-brand);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Nhật ký lỗi</div>
+      <div class="subtitle">Ban Xây dựng Đảng xã Xuân Giang</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/bo-nho-dem" class="account-btn">🗂 Bộ nhớ đệm</a>
+  </header>
+
+  <div class="section">
+    <p style="font-size:13px;color:var(--text-muted);margin-top:0;">
+      Các lỗi hệ thống gần đây (server ghi bằng <code>console.error</code>), giữ tối đa 200 lỗi mới nhất,
+      mất khi server khởi động lại. Đây là để bạn phát hiện sự cố sớm, không phải nhật ký cho từng lượt xem.
+    </p>
+
+    <% if (errors.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có lỗi nào được ghi kể từ lần khởi động gần nhất. 🎉</p>
+    <% } else { %>
+      <p style="font-size:13px;color:var(--text-muted);">Đang có <b><%= errors.length %></b> lỗi.</p>
+      <% errors.forEach(function(e) { %>
+        <div class="err-row">
+          <div class="err-time"><%= e.time %></div>
+          <div class="err-msg"><%= e.message %></div>
+        </div>
+      <% }) %>
+
+      <form method="POST" action="/quanly/nhat-ky-loi/xoa"
+            onsubmit="return confirm('Xoá toàn bộ nhật ký lỗi? Không thể hoàn tác.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit" class="danger">🗑 Xoá nhật ký lỗi</button>
+      </form>
+    <% } %>
+  </div>
+
+</body>
+</html>

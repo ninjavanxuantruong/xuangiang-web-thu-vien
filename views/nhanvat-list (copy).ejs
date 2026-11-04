@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Danh nhân & Địa điểm — Thư viện Đảng bộ Xuân Giang</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:12px;color:#fff;">
+      <div class="logo">★</div>
+      <div>
+        <div class="title">Thư viện Đảng bộ Xuân Giang</div>
+        <div class="subtitle">Danh nhân & Địa điểm</div>
+      </div>
+    </a>
+    <div class="spacer"></div>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+  <div class="section">
+    <div class="section-title">Danh nhân & Địa điểm (<%= items.length %>)</div>
+
+    <% if (items.length === 0) { %>
+      <p style="color:var(--text-muted);font-size:13px;">Chưa có nội dung nào trong mục này.</p>
+    <% } else { %>
+      <div class="card-grid">
+        <% items.forEach(function(item) { %>
+          <a class="card" href="/nguoi-va-dat/<%= encodeURIComponent(item.name) %>">
+            <div class="card-thumb">
+              <% if (item.images && item.images.length > 0) { %>
+                <img src="<%= item.images[0] %>" alt="<%= item.name %>" />
+              <% } else { %>
+                🏛️
+              <% } %>
+            </div>
+            <div class="card-title"><%= item.name %></div>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <footer class="site-footer">
+    <a href="/">← Về trang chính</a>
+    <a class="admin-link" href="/quanly">· Quản lý</a>
+  </footer>
+
+  <script src="/public/main.js"></script>
+</body>
+</html>

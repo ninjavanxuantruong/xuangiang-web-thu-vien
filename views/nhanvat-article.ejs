@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= article.name %></title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+
+  <div class="reader-toolbar">
+    <button data-tts-play>▶ Đọc bài</button>
+    <button data-tts-stop>■ Dừng</button>
+    <button data-speed-down>Chậm</button>
+    <button data-speed-up>Nhanh</button>
+    <button data-font-smaller>Chữ nhỏ</button>
+    <button data-font-bigger>Chữ to</button>
+    <button data-open-listen-mode>🎧 Nghe khi di chuyển</button>
+    <button data-toggle-theme>🌙 Tối</button>
+    <a href="/nguoi-va-dat" style="margin-left:auto;font-size:12px;color:var(--text-muted);">← Danh nhân & Địa điểm</a>
+  </div>
+
+  <div style="display:none" data-doc-name><%= article.name %></div>
+
+  <div class="reader-content">
+    <h1 style="font-size:1.3em;margin-bottom:16px;"><%= article.name %></h1>
+
+    <% article.blocks.forEach(function(block) { %>
+      <% if (block.type === "text") { %>
+        <p class="tts-chunk"><%- block.content %></p>
+      <% } else if (block.type === "image") { %>
+        <div class="article-image">
+          <img src="<%= block.url %>" alt="<%= article.name %>" />
+        </div>
+      <% } %>
+    <% }) %>
+  </div>
+
+  <script src="/public/main.js"></script>
+</body>
+</html>
