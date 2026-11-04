@@ -21,3 +21,8 @@ Thumbs.db
 # Log
 npm-debug.log*
 *.log
+
+.npmrc
+podcast-cache/
+wordCache/
+swrCache/
