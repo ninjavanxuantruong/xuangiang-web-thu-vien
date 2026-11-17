@@ -31,10 +31,12 @@ import { registerDangVienRoutes } from "./dangVien.js";
 import { getLichTuan } from "./lichTuan.js";
 import { csrfCookie, csrfCheck } from "./csrf.js";
 import { clearRamCache } from "./firestoreCache.js";
-import { servePdf, getPdfCacheStats, clearPdfCache, getDiskInfo } from "./pdfCache.js";
+import { getPdfCacheStats, clearPdfCache, getDiskInfo } from "./pdfCache.js";
 import { listWordCache, deleteWordCache } from "./wordCache.js";
-import { getLatestPodcast, getCachedPodcastPath, getPodcastTrackFile } from "./podcast.js";
-import { getRadioLatest, serveLiveHls } from "./radio.js";
+import { getLatestPodcast } from "./podcast.js";
+import { getRadioLatest } from "./radio.js";
+import sharp from "sharp";
+import { bangThongEarly, registerBangThongRoutes, flushBangThong } from "./bangThong.js";
 import {
   getChiBoList, getChiBoListCached, getIdentity, setIdentity, registerReader, buildChiBoReport,
   recordDocRead, getReadStats, identityGuard, getRegisteredReaders, buildRoster, deleteReader, getMyReads, renameChiBo
@@ -76,6 +78,7 @@ const SESSION_SECRET =
 const app = express();
  // Chạy sau proxy (Replit/Render...): để req.ip là IP thật của người dùng, không phải IP proxy
  app.set("trust proxy", 1);
+app.use(bangThongEarly); // đếm băng thông, khóa 2 bậc, chặn bot, ping: PHẢI đặt TRƯỚC compression
 if (compression) app.use(compression()); // đặt TRƯỚC static và mọi route
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,6 +113,7 @@ app.use(
 );
 app.use(csrfCookie);
 app.use(identityGuard);
+registerBangThongRoutes(app, { requireAdmin, csrfCheck }); // trang /quanly/bang-thong
 // ====== Health check ======
 app.get("/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
@@ -277,7 +281,10 @@ async function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`${signal}: ghi nốt lượt truy cập rồi thoát...`);
-  await Promise.race([flushVisits().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 5000))]);
+  await Promise.race([
+    Promise.all([flushVisits().catch(() => {}), flushBangThong().catch(() => {})]),
+    new Promise((resolve) => setTimeout(resolve, 5000))
+  ]);
   process.exit(0);
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));
@@ -501,7 +508,7 @@ app.get("/", async (req, res) => {
 const renderStart = Date.now();
   req.app.render(
     "home-content",
-    { types, featuredDocs, suggestedPosts, latestVideos, xaNews, channelVideos, nhanVatPreview, mosaicZones, worldNews, surveys, podcast, radio,
+    { types, featuredDocs, suggestedPosts, latestVideos, xaNews, channelVideos, nhanVatPreview: nhanVatChoTrangChu(nhanVatPreview), mosaicZones, worldNews, surveys, podcast, radio,
     chiBoList, daXungDanh: Boolean(getIdentity(req)), tenXungDanh: getIdentity(req)?.name || "", csrfToken: req.csrfToken },
     (err, contentHtml) => {
       if (err) console.error("Dựng trang chủ (EJS) lỗi:", err.message);
@@ -519,7 +526,7 @@ const renderStart = Date.now();
     }
 
     // Trang đã gửi xong -> lúc này mới tải sẵn ảnh vào RAM cho những người vào sau.
-    setImmediate(() => warmProxiedImages({ suggestedPosts, mosaicZones, xaNews, worldNews, nhanVatPreview }));
+    setImmediate(() => warmProxiedImages({ suggestedPosts, mosaicZones, xaNews, worldNews, nhanVatPreview: nhanVatChoTrangChu(nhanVatPreview) }));
   }
 );
 } catch (err) {
@@ -608,8 +615,8 @@ app.get("/doc/:name", async (req, res) => {
     }
 
     // Mặc định coi là PDF — hiển thị cuộn nhiều trang liên tiếp (không lật trang)
-    const pdfUrl = fileId ? `/pdf/${fileId}` : directUrl;
-    return res.render("reader", { doc: { name: doc.name, type: "pdf" }, pdfUrl });
+    // PDF còn sót: mở thẳng bằng Google Drive — file đi từ Google tới người xem, không qua server mình.
+    return res.redirect(fileId ? `https://drive.google.com/file/d/${fileId}/view` : directUrl);
   } catch (err) {
     console.error("GET /doc/:name error:", err);
     res.status(500).send("Không thể hiển thị tài liệu");
@@ -655,27 +662,22 @@ app.get("/tai-ve/:name", async (req, res) => {
 // Người đầu tiên mở 1 PDF: server tải từ Drive 1 lần rồi lưu lại; mọi người sau
 // được phục vụ thẳng từ đĩa (có hỗ trợ tải từng phần cho trình xem PDF). Chỉ
 // phục vụ các file có trong sheet Tài liệu, không còn là "proxy Drive mở".
-app.get("/pdf/:id", servePdf);
-app.get("/podcast/audio", (req, res) => {
-  const filePath = getCachedPodcastPath();
-  if (!filePath) return res.status(404).send("Chưa có file podcast");
-  res.setHeader("Content-Type", "audio/mpeg");
-  res.sendFile(filePath); // Express tự hỗ trợ HTTP Range -> tua được
+// PDF/podcast không còn đi qua server mình (tốn băng thông Render). Link cũ (đã lưu,
+// đã chia sẻ) vẫn chạy: chuyển thẳng sang Google Drive.
+const DRIVE_ID_RE = /^[A-Za-z0-9_-]{10,120}$/;
+function chuyenSangDrive(req, res) {
+  const id = String(req.params.id || "");
+  if (!DRIVE_ID_RE.test(id)) return res.status(404).send("Không tìm thấy tệp");
+  res.redirect(302, `https://drive.google.com/file/d/${id}/view`);
+}
+app.get("/pdf/:id", chuyenSangDrive);
+app.get("/podcast/audio/:id", chuyenSangDrive);
+app.get("/podcast/audio", async (req, res) => {
+  const p = await getLatestPodcast().catch(() => null);
+  const id = p && p.tracks && p.tracks[0] && p.tracks[0].id;
+  if (!id || !DRIVE_ID_RE.test(id)) return res.status(404).send("Chưa có file podcast");
+  res.redirect(302, `https://drive.google.com/file/d/${id}/view`);
 });
-
-// Từng bài trong danh sách podcast: /podcast/audio/<mã file Drive>. Chỉ phát
-// những bài có trong danh sách; bài chưa có trên đĩa thì tải từ Drive rồi phát.
-app.get("/podcast/audio/:id", async (req, res) => {
-  try {
-    const filePath = await getPodcastTrackFile(req.params.id);
-    if (!filePath) return res.status(404).send("Không tìm thấy bản podcast này");
-    res.sendFile(filePath); // tự đặt Content-Type theo đuôi file, hỗ trợ Range -> tua được
-  } catch (err) {
-    console.error("GET /podcast/audio/:id error:", err.message);
-    if (!res.headersSent) res.status(502).send("Không tải được bản podcast này từ Drive");
-  }
-});
-app.get("/radio/live/hls", serveLiveHls);
 
 // ====== Proxy ảnh lấy từ trang ngoài (Bài đọc đề xuất) ======
 // Lý do cần proxy: server mình vừa fetch thành công trang nguồn nên biết
@@ -712,6 +714,43 @@ const IMG_MAX_REDIRECTS = 3;
 // mà vẫn chặn được kiểu dội hàng trăm yêu cầu cùng lúc.
 const IMG_MAX_CONCURRENT = 24;
 const IMG_MAX_QUEUE = 400;
+const IMG_DEFAULT_WIDTH = 640; // ảnh qua proxy được thu nhỏ còn tối đa 640px, đổi sang WebP
+const IMG_DRIVE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // ảnh từ Drive: server nhớ 30 ngày
+sharp.cache(false); // gói free chỉ ~512MB RAM: không để sharp giữ cache riêng
+sharp.concurrency(1); // CPU gói free rất yếu: xử lý ảnh lần lượt
+
+const imgKey = (href, w) => `${href}|${w}`; // mỗi (ảnh, độ rộng) là 1 mục cache riêng
+
+function clampWidth(v) {
+  const n = parseInt(String(v == null ? "" : v), 10);
+  if (!Number.isFinite(n)) return IMG_DEFAULT_WIDTH;
+  return Math.min(1280, Math.max(96, n));
+}
+
+function laAnhDrive(href) {
+  try {
+    const h = new URL(href).hostname.toLowerCase();
+    return h === "drive.google.com" || h === "drive.usercontent.google.com" || h.endsWith(".googleusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
+// Thu nhỏ + đổi WebP. Lỗi hoặc kết quả không nhỏ hơn bản gốc -> giữ ảnh gốc.
+// (GIF động sẽ thành ảnh tĩnh — ảnh tin tức hiếm khi là GIF động.)
+async function thuNhoAnh(img, w) {
+  try {
+    const buf = await sharp(img.buf, { failOn: "none", limitInputPixels: 80e6 })
+      .rotate() // xoay đúng chiều theo EXIF (ảnh chụp bằng điện thoại)
+      .resize({ width: w, withoutEnlargement: true })
+      .webp({ quality: 72 })
+      .toBuffer();
+    if (buf.length > 0 && buf.length < img.buf.length) return { buf, type: "image/webp" };
+  } catch (err) {
+    console.warn("[ảnh] không thu nhỏ được, giữ ảnh gốc:", err.message);
+  }
+  return img;
+}
 
 const imgCache = new Map(); // href -> { buf, type, time }  (thứ tự chèn = cũ -> mới)
 let imgCacheBytes = 0;
@@ -721,7 +760,7 @@ const imgInFlight = new Map(); // href -> Promise đang tải
 function imgCacheGet(href) {
   const hit = imgCache.get(href);
   if (!hit) return null;
-  if (Date.now() - hit.time > IMG_CACHE_TTL_MS) {
+  if (Date.now() - hit.time > (hit.ttl || IMG_CACHE_TTL_MS)) {
     imgCache.delete(href);
     imgCacheBytes -= hit.buf.length;
     return null;
@@ -862,23 +901,26 @@ async function downloadImage(src) {
 }
 
 // Trả { buf, type } hoặc null (lỗi/quá tải -> nơi gọi trả ảnh SVG dự phòng).
-async function getExternalImage(href) {
-  const hit = imgCacheGet(href);
+async function getExternalImage(href, w = IMG_DEFAULT_WIDTH) {
+  const key = imgKey(href, w);
+  const hit = imgCacheGet(key);
   if (hit) return hit;
 
   const retryAt = imgFailUntil.get(href);
   if (retryAt && retryAt > Date.now()) return null;
-  if (imgInFlight.has(href)) return imgInFlight.get(href);
+  if (imgInFlight.has(key)) return imgInFlight.get(key);
 
   const task = (async () => {
     const gotSlot = await acquireImgSlot();
     if (!gotSlot) return null; // quá tải: không ghi nhớ là "nguồn lỗi"
     const startedAt = Date.now();
     try {
-      const img = await downloadImage(href);
-      imgCacheSet(href, img);
+      const goc = await downloadImage(href);
+      const img = await thuNhoAnh(goc, w);
+      img.ttl = laAnhDrive(href) ? IMG_DRIVE_TTL_MS : IMG_CACHE_TTL_MS;
+      imgCacheSet(key, img);
       const took = Date.now() - startedAt;
-      if (took > 3000) console.log(`[ảnh] tải chậm ${took}ms (${(img.buf.length / 1024).toFixed(0)}KB): ${href}`);
+      if (took > 3000) console.log(`[ảnh] tải chậm ${took}ms (${(goc.buf.length / 1024).toFixed(0)}KB -> ${(img.buf.length / 1024).toFixed(0)}KB): ${href}`);
       return img;
     } catch (err) {
       console.warn("Proxy ảnh ngoài lỗi:", href, "-", err.message);
@@ -891,9 +933,9 @@ async function getExternalImage(href) {
     } finally {
       releaseImgSlot();
     }
-  })().finally(() => imgInFlight.delete(href));
+  })().finally(() => imgInFlight.delete(key));
 
-  imgInFlight.set(href, task);
+  imgInFlight.set(key, task);
   return task;
 }
 
@@ -908,8 +950,13 @@ function collectProxiedImageUrls(value, out, depth = 0) {
   if (typeof value === "string") {
     if (value.startsWith("/anh-ngoai?u=")) {
       try {
-        const u = new URL(value, "http://localhost").searchParams.get("u");
-        if (u) out.add(new URL(u).href);
+        const q = new URL(value, "http://localhost").searchParams;
+        const u = q.get("u");
+        if (u) {
+          const href = new URL(u).href;
+          const w = clampWidth(q.get("w"));
+          out.set(imgKey(href, w), { href, w });
+        }
       } catch {
         /* bỏ qua địa chỉ hỏng */
       }
@@ -929,9 +976,9 @@ async function warmProxiedImages(data) {
   if (warmingImages) return;
   warmingImages = true;
   try {
-    const urls = new Set();
+    const urls = new Map();
     collectProxiedImageUrls(data, urls);
-    const pending = [...urls].filter((href) => !imgCache.has(href));
+    const pending = [...urls.entries()].filter(([key]) => !imgCache.has(key)).map(([, v]) => v);
     const startedAt = Date.now();
     let okCount = 0;
     let failCount = 0;
@@ -943,7 +990,7 @@ async function warmProxiedImages(data) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         continue;
       }
-      const results = await Promise.all(pending.slice(i, i + BATCH).map((href) => getExternalImage(href).catch(() => null)));
+      const results = await Promise.all(pending.slice(i, i + BATCH).map((x) => getExternalImage(x.href, x.w).catch(() => null)));
       results.forEach((r) => (r ? okCount++ : failCount++));
       i += BATCH;
     }
@@ -964,6 +1011,7 @@ app.get("/anh-ngoai", async (req, res) => {
   const src = req.query.u;
   const name = String(req.query.name || "").slice(0, 200);
   if (!src || typeof src !== "string") return res.status(400).send("Thiếu tham số u");
+  const w = clampWidth(req.query.w); // ?w=160... cho ảnh nhỏ; không có thì 640
 
   let target;
   try {
@@ -973,11 +1021,13 @@ app.get("/anh-ngoai", async (req, res) => {
   }
 
   try {
-    const img = await getExternalImage(target.href);
+    const img = await getExternalImage(target.href, w);
     if (img) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Content-Type", img.type);
-      res.setHeader("Cache-Control", "public, max-age=21600"); // 6 giờ, ảnh tin tức ít khi đổi
+      // Ảnh từ Drive hầu như không đổi -> trình duyệt nhớ 30 ngày; ảnh tin ngoài nhớ 6 giờ.
+      const giay = laAnhDrive(target.href) ? 30 * 24 * 3600 : 6 * 3600;
+      res.setHeader("Cache-Control", `public, max-age=${giay}`);
       return res.send(img.buf);
     }
   } catch (err) {
@@ -991,10 +1041,32 @@ app.get("/anh-ngoai", async (req, res) => {
 });
 
 // ====== Danh nhân & Địa điểm ======
+// Ảnh đại diện Danh nhân chỉ hiện ô nhỏ -> xin proxy bản 320px cho nhẹ.
+function nhoAnhDanhNhan(it) {
+  return { ...it, images: (it.images || []).map((u) => (u.startsWith("/anh-ngoai?") ? `${u}&w=320` : u)) };
+}
+
+// Trang chủ chỉ hiện 12 người, xoay vòng theo ngày (đổi lúc 0h giờ Việt Nam).
+const DANH_NHAN_TRANG_CHU = 12;
+function nhanVatChoTrangChu(list) {
+  const ds = Array.isArray(list) ? list : [];
+  const n = ds.length;
+  if (n === 0) return [];
+  const take = Math.min(DANH_NHAN_TRANG_CHU, n);
+  const ngay = Math.floor((Date.now() + 7 * 3600 * 1000) / 86400000);
+  const start = (ngay * take) % n;
+  return Array.from({ length: take }, (_, i) => nhoAnhDanhNhan(ds[(start + i) % n]));
+}
+
+// Trang "Xem tất cả": chia trang, mỗi trang 24 người.
+const DANH_NHAN_MOI_TRANG = 24;
 app.get("/nguoi-va-dat", async (req, res) => {
   try {
-    const items = await getNhanVatList();
-    res.render("nhanvat-list", { items });
+    const all = await getNhanVatList();
+    const soTrang = Math.max(1, Math.ceil(all.length / DANH_NHAN_MOI_TRANG));
+    const trang = Math.min(soTrang, Math.max(1, parseInt(req.query.trang, 10) || 1));
+    const items = all.slice((trang - 1) * DANH_NHAN_MOI_TRANG, trang * DANH_NHAN_MOI_TRANG).map(nhoAnhDanhNhan);
+    res.render("nhanvat-list", { items, tong: all.length, trang, soTrang });
   } catch (err) {
     console.error("GET /nguoi-va-dat error:", err);
     res.status(500).send("Không tải được danh sách Danh nhân & Địa điểm");
@@ -1476,7 +1548,7 @@ async function warmUpOnStart(attempt = 1) {
   await warmProxiedImages({
     suggestedPosts: sortSuggestedPosts(posts || []).filter((p) => p.found),
     xaNews,
-    nhanVatPreview: nhanVat,
+    nhanVatPreview: nhanVatChoTrangChu(nhanVat),
     mosaicZones: mosaic,
     worldNews
   });

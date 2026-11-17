@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khảo sát — Thư viện Đảng bộ Xuân Giang</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .ks-wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 120px; }
+    .ks-wrap h1 { font-size: 1.25em; line-height: 1.4; margin: 0 0 8px; }
+    .ks-intro { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0 0 20px; }
+
+    .ks-nguoi {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--color-brand);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .ks-nguoi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .ks-nguoi-grid { grid-template-columns: 1fr; } }
+    .ks-nguoi label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .ks-nguoi input, .ks-nguoi select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .ks-nguoi input:focus, .ks-nguoi select:focus { outline: 2px solid var(--color-gold); outline-offset: 1px; }
+    .ks-note { font-size: 12.5px; color: var(--text-muted); margin: 10px 0 0; line-height: 1.5; }
+    .ks-trang-thai { font-size: 13px; margin: 8px 0 0; min-height: 1em; }
+    .ks-trang-thai.dat { color: #2f7d4f; font-weight: 600; }
+    .ks-trang-thai.chua-dat { color: #b26a00; }
+
+    .ks-box { border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+    .ks-box[hidden] { display: none; }
+    .ks-box.loi { background: #fdeaea; color: var(--color-brand); }
+    .ks-box.hoi { background: var(--bg-surface-2); }
+    .ks-box.hoi .ks-chon { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .ks-box button {
+      font: inherit; font-size: 14px; cursor: pointer;
+      padding: 8px 14px; border-radius: 999px;
+      border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-primary);
+    }
+    .ks-box button.chinh { background: var(--color-brand); border-color: var(--color-brand); color: #fff; }
+
+    .ks-ket-qua { text-align: center; padding: 22px 16px; border: 1px solid var(--border-color); background: var(--bg-surface); }
+    .ks-ket-qua .ks-diem { font-size: 2.4em; font-weight: 700; line-height: 1.1; margin: 6px 0; }
+    .ks-ket-qua .ks-nhan { display: inline-block; padding: 4px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+    .ks-ket-qua.dat .ks-diem { color: #2f7d4f; }
+    .ks-ket-qua.dat .ks-nhan { background: #eaf5ec; color: #2f7d4f; }
+    .ks-ket-qua.chua-dat .ks-diem { color: var(--color-brand); }
+    .ks-ket-qua.chua-dat .ks-nhan { background: #fdeaea; color: var(--color-brand); }
+    .ks-ket-qua .ks-chon { justify-content: center; display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+    .ks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .ks-cau {
+      background: var(--bg-page);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      scroll-margin-top: 16px;
+    }
+    .ks-cau.thieu { border-color: var(--color-brand); box-shadow: 0 0 0 2px rgba(166, 38, 38, 0.15); }
+    .ks-q { font-size: 15px; font-weight: 600; line-height: 1.55; margin: 0 0 12px; }
+    .ks-so { color: var(--color-brand); margin-right: 4px; }
+    .ks-opt {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 12px; margin-top: 8px;
+      border: 1px solid var(--border-color); border-radius: 8px;
+      cursor: pointer; font-size: 14.5px; line-height: 1.55;
+    }
+    .ks-opt:hover { background: var(--bg-surface); }
+    .ks-opt input { margin-top: 4px; accent-color: var(--color-brand); flex: none; width: 18px; height: 18px; }
+    .ks-opt.chon { background: var(--bg-surface-2); border-color: var(--color-brand); }
+    .ks-opt b { flex: none; }
+
+    .ks-thanh {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: var(--bg-page); border-top: 1px solid var(--border-color);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+    .ks-thanh-trong { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .ks-tien-do { flex: 1; font-size: 13px; color: var(--text-secondary); }
+    .ks-vach { height: 6px; background: var(--bg-surface-2); border-radius: 3px; margin-top: 5px; overflow: hidden; }
+    .ks-vach span { display: block; height: 100%; width: 0; background: var(--color-brand); transition: width .2s; }
+    .ks-thanh .btn-pill:disabled { opacity: .5; cursor: not-allowed; }
+    @media (prefers-reduced-motion: reduce) { .ks-vach span { transition: none; } }
+
+    .ks-list[hidden], .ks-thanh[hidden] { display: none; }
+
+    /* Chế độ "Tiếp tục làm" */
+    .ks-cau.sai { border: 2px solid var(--color-brand); background: #fff6f6; }
+    [data-theme="dark"] .ks-cau.sai { background: #2c1b1b; }
+    .ks-cau .ks-nhan-sai {
+      display: none; margin: 0 0 10px; padding: 6px 10px; border-radius: 6px;
+      background: #fdeaea; color: var(--color-brand); font-size: 13.5px; font-weight: 600;
+    }
+    .ks-cau.sai .ks-nhan-sai { display: block; }
+    .ks-opt.da-chon-sai { text-decoration: line-through; opacity: .6; }
+    .ks-cau.khoa { opacity: .55; }
+    .ks-cau.khoa .ks-opt { cursor: default; }
+    .ks-cau.khoa .ks-q::after { content: " — đã ghi nhận"; font-weight: 400; font-size: 13px; color: var(--text-muted); }
+    .ks-nguoi input:disabled, .ks-nguoi select:disabled { opacity: .7; }
+
+    /* Gợi ý: đóng sẵn, bấm mới mở */
+    .ks-goi-y { margin-top: 12px; }
+    .ks-goi-y > summary {
+      display: inline-flex; align-items: center; gap: 6px;
+      cursor: pointer; list-style: none; user-select: none;
+      padding: 8px 14px; border-radius: 999px;
+      border: 1px dashed var(--color-gold); color: var(--text-secondary);
+      font-size: 14px; font-weight: 600;
+    }
+    .ks-goi-y > summary::-webkit-details-marker { display: none; }
+    .ks-goi-y > summary:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
+    .ks-goi-y[open] > summary { border-style: solid; background: #fdf6e3; color: #6b4e00; }
+    [data-theme="dark"] .ks-goi-y[open] > summary { background: #3a2f12; color: #f0d58a; }
+    .ks-goi-y-noi-dung {
+      margin-top: 8px; padding: 12px 14px; border-radius: 8px;
+      background: #fdf6e3; border-left: 3px solid var(--color-gold);
+      font-size: 14.5px; line-height: 1.65; color: var(--text-primary);
+    }
+    [data-theme="dark"] .ks-goi-y-noi-dung { background: #2e2614; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:12px;color:#fff;">
+      <div class="logo">★</div>
+      <div>
+        <div class="title">Thư viện Đảng bộ Xuân Giang</div>
+        <div class="subtitle">Khảo sát</div>
+      </div>
+    </a>
+    <div class="spacer"></div>
+    <button class="account-btn" data-toggle-theme>🌙 Tối</button>
+  </header>
+
+  <main class="ks-wrap">
+    <% if (nhieuBai) { %><p style="margin:0 0 8px;font-size:13px;"><a href="/khao-sat">← Các bài khảo sát khác</a></p><% } %>
+    <h1><%= tieuDe %></h1>
+    <p class="ks-intro">
+      Gồm <strong><%= cauHoi.length %> câu</strong><% if (ngauNhien) { %> lấy ngẫu nhiên trong bộ <%= tongNganHang %> câu<% } %>, mỗi câu chọn 1 phương án đúng nhất.
+      Đạt khi trả lời đúng từ <strong><%= soCanDat %> câu</strong> (<%= nguong %>%) trở lên.
+      Chưa đạt thì có thể <strong>tiếp tục làm</strong> (sửa các câu sai, câu sửa đúng được tính <%= heSoSua %>% điểm) hoặc <strong>làm lại từ đầu</strong>.
+      <% if (cauHoi.some(function (c) { return c.goiY; })) { %><br />Câu nào chưa rõ, bấm <strong>💡 Xem gợi ý</strong> để đọc lại nội dung nghị quyết liên quan.<% } %>
+    </p>
+
+    <section class="ks-nguoi" aria-label="Người làm bài">
+      <div class="ks-nguoi-grid">
+        <div>
+          <label for="ks-ten">Họ và tên</label>
+          <input type="text" id="ks-ten" autocomplete="name" maxlength="100" placeholder="Nguyễn Văn A"
+                 value="<%= identity ? identity.name : '' %>" />
+        </div>
+        <div>
+          <label for="ks-chibo">Chi bộ</label>
+          <select id="ks-chibo">
+            <option value="">— Chọn chi bộ —</option>
+            <% chiBoList.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= identity && identity.chiBoId === c.id ? "selected" : "" %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      <p class="ks-note">
+        <% if (identity) { %>Đã điền theo thông tin xưng danh trên máy này. <% } %>Làm bài cho đồng chí khác (dùng chung máy) thì sửa lại họ tên và chi bộ — kết quả lưu theo tên ghi ở đây.
+      </p>
+      <p class="ks-trang-thai" id="ks-trang-thai" aria-live="polite"></p>
+    </section>
+
+    <div class="ks-box hoi" id="ks-xac-nhan" hidden></div>
+    <div class="ks-box loi" id="ks-loi" role="alert" hidden></div>
+    <div class="ks-box ks-ket-qua" id="ks-ket-qua" aria-live="polite" hidden></div>
+
+    <ol class="ks-list" id="ks-list">
+      <% cauHoi.forEach(function (c) { %>
+        <li class="ks-cau" id="cau-<%= c.id %>" data-id="<%= c.id %>">
+          <p class="ks-nhan-sai">✗ Câu này chưa đúng — mời chọn lại</p>
+          <p class="ks-q"><span class="ks-so">Câu <%= c.so %>.</span><%= c.q %></p>
+          <% c.opts.forEach(function (o) { %>
+            <label class="ks-opt">
+              <input type="radio" name="q_<%= c.id %>" value="<%= o.k %>" />
+              <b><%= o.k %>.</b><span><%= o.t %></span>
+            </label>
+          <% }) %>
+          <% if (c.goiY) { %>
+            <details class="ks-goi-y">
+              <summary>💡 Xem gợi ý</summary>
+              <div class="ks-goi-y-noi-dung"><%= c.goiY %></div>
+            </details>
+          <% } %>
+        </li>
+      <% }) %>
+    </ol>
+  </main>
+
+  <div class="ks-thanh">
+    <div class="ks-thanh-trong">
+      <div class="ks-tien-do">
+        Đã trả lời <strong id="ks-dem">0</strong>/<%= cauHoi.length %> câu <span id="ks-nhac" style="color:var(--color-brand);font-weight:600;"></span>
+        <div class="ks-vach"><span id="ks-vach"></span></div>
+      </div>
+      <button type="button" class="btn-pill" id="ks-nop">Nộp bài</button>
+    </div>
+  </div>
+
+  <footer class="site-footer" style="margin-bottom:70px;">
+    <a href="/">← Về trang chính</a>
+  </footer>
+
+  <script>
+    window.KHAO_SAT = <%- JSON.stringify({ dot: dot, de: deToken, ngauNhien: ngauNhien, tong: cauHoi.length, heSoSua: heSoSua, csrf: csrfToken }).replace(/</g, "\\u003c") %>;
+  </script>
+  <script src="/public/main.js"></script>
+  <script src="/public/khao-sat.js"></script>
+  <%- include("partials/xung-danh") %>
+</body>
+</html>

@@ -14,6 +14,16 @@
   const overlay = document.getElementById("splashOverlay");
   if (!overlay) return; // trang không có splash thì bỏ qua
 
+  // Đã xem màn chờ 1 lần trong phiên này (vd. bấm "← Trang chủ" từ trang khác)
+  // -> bỏ qua, vào thẳng trang chủ. Mở tab mới / mở lại trình duyệt thì hiện lại.
+  try {
+    if (sessionStorage.getItem("splashDaXem") === "1") {
+      overlay.remove();
+      return;
+    }
+    sessionStorage.setItem("splashDaXem", "1");
+  } catch (e) {}
+
   const imgEl = document.getElementById("splashImg");
   const textEl = document.getElementById("splashTypedText");
   const cursorEl = document.getElementById("splashCursor");

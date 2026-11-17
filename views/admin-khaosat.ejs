@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý Khảo sát — Khu quản lý</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+    .ks-admin { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+    .ks-admin h1 { font-size: 1.2em; margin: 0 0 4px; }
+    .ks-admin .phu { color: var(--text-muted); font-size: 13px; margin: 0 0 18px; }
+    .canh-bao { background: #fff6dd; color: #7a5a00; border-radius: var(--radius-md); padding: 12px 14px; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+    [data-theme="dark"] .canh-bao { background: #3a2f12; color: #f0d58a; }
+    .canh-bao ul { margin: 6px 0 0; padding-left: 18px; }
+
+    .toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .toolbar-row select {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);
+      background: var(--bg-page); color: var(--text-primary); font-size: 13px;
+    }
+    .nut, .toolbar-row button {
+      display: inline-block; background: var(--text-primary); color: var(--bg-page);
+      border: none; border-radius: 6px; padding: 8px 12px; font-size: 12.5px;
+      cursor: pointer; text-decoration: none; font-family: inherit;
+    }
+    .nut.phu-nut { background: var(--bg-surface-2); color: var(--text-primary); }
+    .nut.do { background: var(--color-brand); color: #fff; }
+
+    .stat-summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 820px) { .stat-summary { grid-template-columns: repeat(3, 1fr); } }
+    .stat-box { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; }
+    .stat-box .so { font-size: 1.6em; font-weight: 700; line-height: 1.2; }
+    .stat-box .nhan { font-size: 12px; color: var(--text-muted); }
+    .stat-box.xanh .so { color: #2f7d4f; }
+    .stat-box.cam .so { color: #b26a00; }
+    .stat-box.do .so { color: var(--color-brand); }
+
+    .bang-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-surface); margin-bottom: 24px; }
+    table.bang { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.bang th, table.bang td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    table.bang th { background: var(--bg-page); font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    table.bang th.so, table.bang td.so { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    table.bang tr:last-child td { border-bottom: none; }
+    table.bang tfoot td { font-weight: 700; background: var(--bg-page); }
+
+    .ty-le { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+    .ty-le .vach { flex: 1; height: 8px; background: var(--bg-surface-2); border-radius: 4px; overflow: hidden; }
+    .ty-le .vach span { display: block; height: 100%; }
+    .muc-thap span { background: var(--color-brand); }
+    .muc-vua span { background: #d99a1e; }
+    .muc-du span { background: #2f7d4f; }
+    .ty-le b { width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .the { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .the.dat { background: #eaf5ec; color: #2f7d4f; }
+    .the.chua-dat { background: #fff1d6; color: #9a5b00; }
+    .the.chua-lam { background: #fdeaea; color: var(--color-brand); }
+
+    details.chi-bo { border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 10px; background: var(--bg-page); }
+    details.chi-bo > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    details.chi-bo > summary .tom-tat { font-weight: 400; font-size: 13px; color: var(--text-secondary); }
+    details.chi-bo .ben-trong { padding: 0 14px 14px; }
+    details.chi-bo .bang-wrap { margin: 10px 0 0; }
+    .ghi-chu { font-size: 12px; color: var(--text-muted); }
+    form.xoa { display: inline; }
+    form.xoa button { background: none; border: none; color: var(--color-brand); cursor: pointer; font-size: 12px; padding: 0; text-decoration: underline; }
+    .da-chep { font-size: 12px; color: #2f7d4f; margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo">★</div>
+    <div>
+      <div class="title">Khu quản lý</div>
+      <div class="subtitle">Khảo sát — kiểm tra nhận thức</div>
+    </div>
+    <div class="spacer"></div>
+    <a href="/quanly/thong-ke" class="account-btn" style="margin-right:8px;">📊 Truy cập</a>
+    <a href="/quanly/gop-y" class="account-btn" style="margin-right:8px;">💬 Góp ý</a>
+    <a href="/quanly/nguoi-doc" class="account-btn">👥 Người đọc</a>
+  </header>
+
+  <main class="ks-admin">
+    <h1>Khảo sát — kiểm tra nhận thức</h1>
+    <% var dangMo = danhMuc.filter(function (b) { return b.soCau; }); %>
+    <% if (!dangMo.length) { %>
+      <div class="canh-bao">Hiện <strong>không có bài khảo sát nào đang mở</strong> (<%= coCauHinh ? "sheet danh mục trống hoặc các link câu hỏi lỗi" : "chưa đặt KHAOSAT_SHEET_URL" %>) — mục Khảo sát đang ẩn với người xem. Kết quả các bài cũ vẫn xem được bên dưới.</div>
+    <% } %>
+
+    <% if (danhMuc.length) { %>
+      <div class="bang-wrap">
+        <table class="bang">
+          <thead><tr><th>Bài khảo sát (theo sheet danh mục)</th><th class="so">Ngân hàng</th><th>Mỗi lượt</th><th class="so">% đạt</th><th class="so">Câu sửa tính</th><th class="so">Gợi ý</th><th></th></tr></thead>
+          <tbody>
+            <% danhMuc.forEach(function (b) { %>
+              <tr>
+                <td><strong><%= b.ten %></strong><% if (!b.soCau) { %> <span class="the chua-lam">lỗi — đang ẩn</span><% } %></td>
+                <td class="so"><%= b.soCau %> câu</td>
+                <td><%= b.soCauMoiLuot ? b.soCauMoiLuot + " câu ngẫu nhiên" : "cả bộ" %></td>
+                <td class="so"><%= b.nguong %>%</td>
+                <td class="so"><%= b.heSoSua %>%</td>
+                <td class="so"><%= b.soCoGoiY %>/<%= b.soCau %></td>
+                <td><% if (b.soCau) { %><a href="/khao-sat/<%= b.dot %>" target="_blank">Xem bài</a> · <% } %><a href="?dot=<%= encodeURIComponent(b.dot) %>">Kết quả</a></td>
+              </tr>
+              <% if (b.canhBao && b.canhBao.length) { %>
+                <tr><td colspan="7"><div class="canh-bao" style="margin:0;">
+                  <strong><%= b.canhBao.length %> lưu ý</strong> ở sheet câu hỏi của bài này:
+                  <ul><% b.canhBao.slice(0, 15).forEach(function (c) { %><li><%= c %></li><% }) %></ul>
+                </div></td></tr>
+              <% } %>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <% if (dots.length > 1) { %>
+      <form class="toolbar-row" method="GET" action="/quanly/khao-sat">
+        <label for="dot" style="font-size:13px;">Xem kết quả bài:</label>
+        <select id="dot" name="dot" onchange="this.form.submit()">
+          <% dots.forEach(function (d) { %>
+            <option value="<%= d.id %>" <%= d.id === dot ? "selected" : "" %>><%= d.ten %></option>
+          <% }) %>
+        </select>
+        <noscript><button type="submit">Xem</button></noscript>
+      </form>
+    <% } %>
+
+    <% if (!tk) { %>
+      <p>Chưa có kết quả nào.</p>
+    <% } else { %>
+      <h2 style="font-size:1.05em;margin:0 0 12px;">Kết quả: <%= tenDot %></h2>
+
+      <% if (!tk.coDanhSachDangVien) { %>
+        <div class="canh-bao">Chưa đọc được danh sách đảng viên (<code>DANGVIEN_SHEET_URL</code>) nên chưa biết chính xác ai <strong>chưa làm</strong>. Số "chưa làm" dưới đây ước tính theo số đảng viên ở sheet chi bộ (cột B).</div>
+      <% } %>
+
+      <% var t = tk.tongHop; %>
+      <div class="stat-summary">
+        <div class="stat-box"><div class="so"><%= t.tong || "—" %></div><div class="nhan">Đảng viên</div></div>
+        <div class="stat-box"><div class="so"><%= t.daLam %></div><div class="nhan">Đã làm bài</div></div>
+        <div class="stat-box xanh"><div class="so"><%= t.dat %></div><div class="nhan">Đạt</div></div>
+        <div class="stat-box cam"><div class="so"><%= t.chuaDat %></div><div class="nhan">Đã làm, chưa đạt</div></div>
+        <div class="stat-box do"><div class="so"><%= t.chuaLam %></div><div class="nhan">Chưa làm</div></div>
+        <div class="stat-box"><div class="so"><%= t.tyLeDat == null ? "—" : t.tyLeDat + "%" %></div><div class="nhan">Tỷ lệ hoàn thành</div></div>
+      </div>
+
+      <div class="toolbar-row">
+        <a class="nut" href="/quanly/khao-sat/xuat-chi-bo?dot=<%= encodeURIComponent(dot) %>">⬇ Tổng hợp theo chi bộ</a>
+        <a class="nut" href="/quanly/khao-sat/xuat?dot=<%= encodeURIComponent(dot) %>">⬇ Danh sách tất cả đảng viên</a>
+        <a class="nut do" href="/quanly/khao-sat/xuat?dot=<%= encodeURIComponent(dot) %>&loc=chua-xong">⬇ Danh sách chưa hoàn thành</a>
+      </div>
+
+      <h2 style="font-size:1em;margin:0 0 8px;">Tiến độ các chi bộ <span class="ghi-chu">(chi bộ chậm nhất xếp trên cùng)</span></h2>
+      <div class="bang-wrap">
+        <table class="bang">
+          <thead>
+            <tr><th>Chi bộ</th><th class="so">Đảng viên</th><th class="so">Đã làm</th><th class="so">Đạt</th><th class="so">Chưa đạt</th><th class="so">Chưa làm</th><th>Tỷ lệ hoàn thành</th></tr>
+          </thead>
+          <tbody>
+            <% tk.chiBo.forEach(function (c) {
+                 var muc = c.tyLeDat == null ? "" : (c.tyLeDat >= 100 ? "muc-du" : c.tyLeDat >= 50 ? "muc-vua" : "muc-thap"); %>
+              <tr>
+                <td><a href="#cb-<%= c.id %>" style="color:inherit;"><%= c.name %></a></td>
+                <td class="so"><%= c.tong || "—" %></td>
+                <td class="so"><%= c.daLam %></td>
+                <td class="so"><%= c.dat %></td>
+                <td class="so"><%= c.chuaDat || "" %></td>
+                <td class="so" style="<%= c.chuaLam ? 'color:var(--color-brand);font-weight:600;' : '' %>"><%= c.chuaLam || "" %></td>
+                <td>
+                  <% if (c.tyLeDat == null) { %>—<% } else { %>
+                    <div class="ty-le <%= muc %>"><div class="vach"><span style="width:<%= Math.min(100, c.tyLeDat) %>%"></span></div><b><%= c.tyLeDat %>%</b></div>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+          <tfoot>
+            <tr><td>Tổng cộng</td><td class="so"><%= t.tong || "—" %></td><td class="so"><%= t.daLam %></td><td class="so"><%= t.dat %></td><td class="so"><%= t.chuaDat %></td><td class="so"><%= t.chuaLam %></td><td><%= t.tyLeDat == null ? "—" : t.tyLeDat + "%" %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <h2 style="font-size:1em;margin:0 0 8px;">Danh sách từng chi bộ</h2>
+      <% var nhan = { dat: "Đạt", "chua-dat": "Chưa đạt", "chua-lam": "Chưa làm" }; %>
+      <% tk.chiBo.forEach(function (c) {
+           var chuaXong = c.nguoi.filter(function (n) { return n.trangThai !== "dat"; });
+           var vanBan = chuaXong.length
+             ? c.name + " — các đồng chí chưa hoàn thành khảo sát \"" + tenDot + "\":\n" +
+               chuaXong.map(function (n, i) { return (i + 1) + ". " + n.name + " (" + nhan[n.trangThai].toLowerCase() + ")"; }).join("\n") +
+               "\nĐề nghị các đồng chí hoàn thành sớm trên phần mềm Thư viện Đảng bộ Xuân Giang, mục Khảo sát."
+             : ""; %>
+        <details class="chi-bo" id="cb-<%= c.id %>">
+          <summary>
+            <%= c.name %>
+            <span class="tom-tat">đạt <%= c.dat %><%= c.tong ? "/" + c.tong : "" %><% if (c.chuaLam) { %> · <span class="the chua-lam"><%= c.chuaLam %> chưa làm</span><% } %><% if (c.chuaDat) { %> · <span class="the chua-dat"><%= c.chuaDat %> chưa đạt</span><% } %></span>
+          </summary>
+          <div class="ben-trong">
+            <div class="toolbar-row" style="margin:0;">
+              <% if (vanBan) { %>
+                <button type="button" class="nut phu-nut" data-chep="<%= vanBan %>">📋 Chép tên chưa hoàn thành (gửi Zalo)</button>
+              <% } %>
+              <% if (c.id !== "_khac") { %>
+                <a class="nut phu-nut" href="/quanly/khao-sat/xuat?dot=<%= encodeURIComponent(dot) %>&chiBo=<%= encodeURIComponent(c.id) %>">⬇ Xuất chi bộ này</a>
+              <% } %>
+            </div>
+            <% if (!c.nguoi.length) { %>
+              <p class="ghi-chu">Chưa có ai làm bài<%= c.coDanhSach ? "" : " (chi bộ này chưa có trong danh sách đảng viên)" %>.</p>
+            <% } else { %>
+              <div class="bang-wrap">
+                <table class="bang">
+                  <thead><tr><th>#</th><th>Họ và tên</th><th>Chức vụ</th><th>Kết quả</th><th>Điểm hiện tại</th><th>Lần đầu</th><th>Số lần nộp</th><th>Thời gian</th><th>Ghi chú</th><th></th></tr></thead>
+                  <tbody>
+                    <% c.nguoi.forEach(function (n, i) { %>
+                      <tr>
+                        <td class="so"><%= i + 1 %></td>
+                        <td><%= n.name %></td>
+                        <td class="ghi-chu"><%= n.chucVu %></td>
+                        <td><span class="the <%= n.trangThai %>"><%= nhan[n.trangThai] %></span></td>
+                        <td class="so"><%= n.trangThai === "chua-lam" ? "" : so(n.diem) + "/" + n.tong + " (" + so(n.phanTram) + "%)" %></td>
+                        <td class="so ghi-chu"><%= n.diemLanDau === "" ? "" : so(n.diemLanDau) + "/" + n.tongLanDau %></td>
+                        <td class="so"><%= n.soLan || "" %></td>
+                        <td class="ghi-chu"><%= vnTime(n.lucDat || n.lanCuoi) %></td>
+                        <td class="ghi-chu"><%= n.ghiChu %></td>
+                        <td><% if (n.docId) { %>
+                          <form class="xoa" method="POST" action="/quanly/khao-sat/xoa" onsubmit="return confirm('Xoá kết quả của <%= n.name.replace(/'/g, '') %>? Người này sẽ phải làm lại.');">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <input type="hidden" name="dot" value="<%= dot %>" />
+                            <input type="hidden" name="id" value="<%= n.docId %>" />
+                            <button type="submit">Xoá</button>
+                          </form>
+                        <% } %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+
+            <% if (c.ngoaiDanhSach.length) { %>
+              <p class="ghi-chu" style="margin:14px 0 0;"><strong>Đã làm nhưng tên không có trong danh sách đảng viên của chi bộ</strong> (có thể gõ sai tên — kiểm tra, cần thì xoá để làm lại đúng tên):</p>
+              <div class="bang-wrap">
+                <table class="bang">
+                  <tbody>
+                    <% c.ngoaiDanhSach.forEach(function (n) { %>
+                      <tr>
+                        <td><%= n.name %></td>
+                        <td><span class="the <%= n.trangThai %>"><%= nhan[n.trangThai] %></span></td>
+                        <td class="so"><%= so(n.diem) %>/<%= n.tong %> (<%= so(n.phanTram) %>%)</td>
+                        <td class="ghi-chu"><%= vnTime(n.lucDat || n.lanCuoi) %></td>
+                        <td class="ghi-chu"><%= n.ghiChu %></td>
+                        <td>
+                          <form class="xoa" method="POST" action="/quanly/khao-sat/xoa" onsubmit="return confirm('Xoá kết quả này?');">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <input type="hidden" name="dot" value="<%= dot %>" />
+                            <input type="hidden" name="id" value="<%= n.docId %>" />
+                            <button type="submit">Xoá</button>
+                          </form>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </details>
+      <% }) %>
+    <% } %>
+  </main>
+
+  <footer class="site-footer">
+    <a href="/quanly/thong-ke">← Khu quản lý</a>
+    <a class="admin-link" href="/quanly/thoat">· Thoát</a>
+  </footer>
+
+  <script>
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest("[data-chep]");
+      if (!b) return;
+      var text = b.getAttribute("data-chep");
+      var xong = function () {
+        var s = document.createElement("span");
+        s.className = "da-chep";
+        s.textContent = "Đã chép — dán vào Zalo";
+        b.after(s);
+        setTimeout(function () { s.remove(); }, 2500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(xong, function () { window.prompt("Chép đoạn sau:", text); });
+      } else {
+        window.prompt("Chép đoạn sau:", text);
+      }
+    });
+    // Mở sẵn chi bộ khi bấm vào tên ở bảng tiến độ
+    function moTheoHash() {
+      var el = location.hash && document.getElementById(location.hash.slice(1));
+      if (el && el.tagName === "DETAILS") el.open = true;
+    }
+    window.addEventListener("hashchange", moTheoHash);
+    moTheoHash();
+  </script>
+</body>
+</html>

@@ -24,6 +24,7 @@ import { getNhanVatList, buildNhanVatArticle } from "./nhanvat.js";
 import { getFallbackSvgMarkup } from "./fallback-images.js";
 import { summarizeDocument, buildSlides, buildFullView } from "./summarizer.js";
 import { prepareHocTap, registerDiemRoutes, getTrangToi } from "./diem.js";
+import { registerKhaoSatRoutes, khaoSatLocals } from "./khaoSat.js";
 
 import { getMosaicZones } from "./mosaicFeed.js";
 import { getWorldNewsFast, getWorldNewsById } from "./worldNews.js";
@@ -113,6 +114,7 @@ app.use(
 );
 app.use(csrfCookie);
 app.use(identityGuard);
+app.use(khaoSatLocals);
 registerBangThongRoutes(app, { requireAdmin, csrfCheck }); // trang /quanly/bang-thong
 // ====== Health check ======
 app.get("/health", (req, res) => {
@@ -509,7 +511,7 @@ const renderStart = Date.now();
   req.app.render(
     "home-content",
     { types, featuredDocs, suggestedPosts, latestVideos, xaNews, channelVideos, nhanVatPreview: nhanVatChoTrangChu(nhanVatPreview), mosaicZones, worldNews, surveys, podcast, radio,
-    chiBoList, daXungDanh: Boolean(getIdentity(req)), tenXungDanh: getIdentity(req)?.name || "", csrfToken: req.csrfToken },
+      chiBoList, coKhaoSat: res.locals.coKhaoSat, daXungDanh: Boolean(getIdentity(req)), tenXungDanh: getIdentity(req)?.name || "", csrfToken: req.csrfToken },
     (err, contentHtml) => {
       if (err) console.error("Dựng trang chủ (EJS) lỗi:", err.message);
       res.end(err ? "<p>Không tải được trang chủ</p></body></html>" : contentHtml);
@@ -1195,6 +1197,7 @@ app.get("/gop-y", async (req, res) => {
 
 registerDangVienRoutes(app, csrfCheck);
 registerDiemRoutes(app);
+registerKhaoSatRoutes(app);
 // ====== Quản lý Góp ý (Ban Xây dựng Đảng) ======
 app.get("/quanly/gop-y", requireAdmin, async (req, res) => {
   const thang = req.query.thang || new Date().toISOString().slice(0, 7);

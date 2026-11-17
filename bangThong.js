@@ -428,6 +428,7 @@ const ROBOTS_TXT =
     "Disallow: /api/",
     "Disallow: /debug/",
     "Disallow: /gop-y",
+    "Disallow: /khao-sat",
     "Crawl-delay: 10",
     "",
     ...BOT_CAM.flatMap((b) => [`User-agent: ${b}`, "Disallow: /", ""])
